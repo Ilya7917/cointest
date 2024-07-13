@@ -21,7 +21,7 @@ const lootboxContent = ref({
 /* skinArea */
 import { skins } from './skinBase';
 import { kStringMaxLength } from 'buffer';
-const { setSkin } = userStore;
+const { setSkin, getCurrentSkin } = userStore;
 
 
 
@@ -245,7 +245,8 @@ const claimDailyBooster = () => {
     <div class="boosts">
         
         <div v-for="skin in skins" :key="skin.id">
-                <div class="boost" @click="setNewUserDick(skin.id)">
+                <div :class="{'boost-active': skin.id === getCurrentSkin, 'boost': skin.id !== getCurrentSkin}" 
+                    @click="setNewUserDick(skin.id)">
                     <img v-if="skin.isUnlock" :src="skin.skin" :alt="'Skin ' + skin.id" :style="{ width: '170px', height: '170px' }">
                     <div v-else class="lockImagePrice">
                         <img :src="question" :style="{ width: '100px', height: '100px' }" />
@@ -333,6 +334,17 @@ const claimDailyBooster = () => {
     align-items: center;
     margin: 10px;
     background: rgb(167 167 167 / 21%);
+    color: #fff;
+    padding: 10px;
+    border-radius: 15px;
+    cursor: pointer;
+}
+
+.boost-active {
+    display: flex;
+    align-items: center;
+    margin: 10px;
+    background: rgba(212, 255, 58, 0.367);
     color: #fff;
     padding: 10px;
     border-radius: 15px;
