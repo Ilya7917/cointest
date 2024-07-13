@@ -55,7 +55,7 @@ export const useUserStore = defineStore('user', {
     state: () => ({
         user: null as User | null,
         boosts: null as Boosts | null,
-        skin: 0 as Number | null
+        skin: 0 as number | null
     }),
     getters: {
         getAccessToken: (state) => state.user?.access_token,

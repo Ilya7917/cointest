@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { useUserStore } from '@/store/user';
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import Balance from '../account/Balance.vue';
 import { useWebAppPopup } from 'vue-tg'
 import question from "@/assets/images/question.svg";
@@ -25,7 +25,10 @@ const { setSkin, getCurrentSkin } = userStore;
 
 
 
-
+onMounted(()=>{
+    if(getCurrentSkin === null) return;
+    mySkin.value.id = getCurrentSkin;
+})
 
 function closePopup() {
   if (justOpened.value) {
@@ -56,7 +59,9 @@ const selectedSkin = ref({
     price: 1000
 });
 
-let mySkin = getCurrentSkin
+const mySkin = ref({
+    id: 0
+})
 
 function showPurchasePopup(boost: string) {
     if (!userStore.boosts || !userStore.user) {
@@ -169,8 +174,8 @@ function setNewUserDick(id: number){
     if(skins[id].isUnlock)
     {
         setSkin(id);
+        mySkin.value.id = id;
         userStore.updateUserCurrentSkin(id);
-        mySkin = id;
     }
     else
     {
@@ -198,6 +203,7 @@ function buyNewDick() {
         {
             skins[selectedSkin.value.id].isUnlock = true;
             setSkin(selectedSkin.value.id);
+            mySkin.value.id = selectedSkin.value.id;
             isPopupVisible.value = false;
             justOpened.value = false;
         }
@@ -246,9 +252,8 @@ const claimDailyBooster = () => {
     <Balance />
     <div class="Bg"></div>
     <div class="boosts">
-        
         <div v-for="skin in skins" :key="skin.id">
-                <div :class="{'boost-active': skin.id === mySkin, 'boost': skin.id !== mySkin}" 
+                <div :class="{'boost-active': skin.id === mySkin.id, 'boost': skin.id !== mySkin.id}" 
                     @click="setNewUserDick(skin.id)">
                     <img v-if="skin.isUnlock" :src="skin.skin" :alt="'Skin ' + skin.id" :style="{ width: '170px', height: '170px' }">
                     <div v-else class="lockImagePrice">
