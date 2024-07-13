@@ -89,7 +89,7 @@ export const useUserStore = defineStore('user', {
                 return
             }
             const response = await axios.post(
-                `${import.meta.env.VITE_API_HOST}/buySkin`,
+                `${import.meta.env.VITE_API_HOST}/setSkin`,
                 {
                   skinId: id
                 },
