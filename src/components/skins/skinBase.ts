@@ -6,16 +6,19 @@ export const skins = [
     {
         id: 0,
         skin: skin1,
-        isUnlock: true
+        isUnlock: true,
+        use: false
     },
     {
         id: 1,
         skin: skin2,
-        isUnlock: false
+        isUnlock: false,
+        use: false
     },
     {
         id: 2,
         skin: skin3,
-        isUnlock: false
+        isUnlock: false,
+        use: false
     }
 ]

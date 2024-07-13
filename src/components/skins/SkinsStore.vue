@@ -168,6 +168,7 @@ function setNewUserDick(id: number){
     {
         setSkin(id);
         userStore.updateUserCurrentSkin(id);
+        selectedSkin.value.id = id;
     }
     else
     {
