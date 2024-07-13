@@ -194,6 +194,8 @@ function buyNewDick() {
         {
             skins[selectedSkin.value.id].isUnlock = true;
             setSkin(selectedSkin.value.id);
+            isPopupVisible.value = false;
+            justOpened.value = false;
         }
     });
 }
