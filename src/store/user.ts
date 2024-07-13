@@ -99,7 +99,13 @@ export const useUserStore = defineStore('user', {
                   }
                 }
             );
-
+            if(response.data.sucess)
+            {
+                this.setUser(response.data.user)
+                return true;
+            }
+            return false;
+            
         },
         async login(initData: string) {
             const apiKey = import.meta.env.VITE_API_KEY

@@ -160,7 +160,7 @@ function showPurchasePopup(boost: string) {
 }
 
 function setNewUserDick(id: number){
-    if (!userStore.boosts || !userStore.user) {
+    if (!userStore.user) {
         return;
     }
     console.log(`Clicked skin: ${id}`);
@@ -183,6 +183,19 @@ function setNewUserDick(id: number){
             console.log(isPopupVisible.value)
         }
     }
+}
+
+function buyNewDick() {
+    if (!userStore.user) {
+        return;
+    }
+    userStore.buyNewSkin(selectedSkin.value.id).then(result => {
+        if(result)
+        {
+            skins[selectedSkin.value.id].isUnlock = true;
+            setSkin(selectedSkin.value.id);
+        }
+    });
 }
 
 
@@ -254,7 +267,7 @@ const claimDailyBooster = () => {
                 <p>Unlock new skin?</p>
                 <p v-for="spec in selectedBoost.nextLevelSpec" class="boost-desc-hint">{{ spec }}</p>
                 <p v-if="selectedBoost.price != 0">🍆{{ selectedSkin.price }}</p>
-                <button class="boost-purchase-button" @click="purchaseBoost">{{ selectedBoost.action }}</button>
+                <button class="boost-purchase-button" @click="buyNewDick">Buy new skin</button>
             </div>
         </div>
     </div>
