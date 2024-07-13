@@ -56,6 +56,8 @@ const selectedSkin = ref({
     price: 1000
 });
 
+let mySkin = getCurrentSkin
+
 function showPurchasePopup(boost: string) {
     if (!userStore.boosts || !userStore.user) {
         return;
@@ -168,7 +170,7 @@ function setNewUserDick(id: number){
     {
         setSkin(id);
         userStore.updateUserCurrentSkin(id);
-        selectedSkin.value.id = id;
+        mySkin = id;
     }
     else
     {
@@ -246,7 +248,7 @@ const claimDailyBooster = () => {
     <div class="boosts">
         
         <div v-for="skin in skins" :key="skin.id">
-                <div :class="{'boost-active': skin.id === getCurrentSkin, 'boost': skin.id !== getCurrentSkin}" 
+                <div :class="{'boost-active': skin.id === mySkin, 'boost': skin.id !== mySkin}" 
                     @click="setNewUserDick(skin.id)">
                     <img v-if="skin.isUnlock" :src="skin.skin" :alt="'Skin ' + skin.id" :style="{ width: '170px', height: '170px' }">
                     <div v-else class="lockImagePrice">
