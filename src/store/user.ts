@@ -55,7 +55,7 @@ export const useUserStore = defineStore('user', {
     state: () => ({
         user: null as User | null,
         boosts: null as Boosts | null,
-        skin: -1 as Number | null
+        skin: 0 as Number | null
     }),
     getters: {
         getAccessToken: (state) => state.user?.access_token,
@@ -80,7 +80,7 @@ export const useUserStore = defineStore('user', {
                     'x-api-key': this.user.access_token,
                 }
             });
-            // this.setSkin(response.data.current_skin);
+            this.skin = response.data.current_skin;
             return response.data.skins;
         },
         async buyNewSkin(skinId: number)

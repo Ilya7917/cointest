@@ -42,23 +42,26 @@ onMounted(() => {
   userStore.login(useWebApp().initData).then(user => {
     console.log(user)
     userStore.getSkins().then(mySkins => {
-      for(let i = 0; i < mySkins; i++)
+      if(mySkins > 1)
       {
-          skins[i].isUnlock = true;
+        for(let i = 0; i < mySkins; i++)
+        {
+            skins[i].isUnlock = true;
+        } 
+      }
+
+      if (!user) {
+        isUserLoggedIn.value = true
+        return
+      }
+      locale.value = user.language_code;
+      isUserLoggedIn.value = true
+      if (user.auto_farmer_profit > 0) {
+        farmerPopup.value = true
+        farmerPopupText.value = `The Farmer mined ${user.auto_farmer_profit} coins.`
+        farmerProfit.value = user.auto_farmer_profit
       }
     })
-
-    if (!user) {
-      isUserLoggedIn.value = true
-      return
-    }
-    locale.value = user.language_code;
-    isUserLoggedIn.value = true
-    if (user.auto_farmer_profit > 0) {
-      farmerPopup.value = true
-      farmerPopupText.value = `The Farmer mined ${user.auto_farmer_profit} coins.`
-      farmerProfit.value = user.auto_farmer_profit
-    }
   })
 
   rechargeID = setInterval(() => {
