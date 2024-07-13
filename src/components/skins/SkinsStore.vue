@@ -4,6 +4,7 @@ import { onMounted, ref } from 'vue';
 import Balance from '../account/Balance.vue';
 import { useWebAppPopup } from 'vue-tg'
 import question from "@/assets/images/question.svg";
+import {useWebAppViewport, useWebApp, useWebAppBackButton, useWebAppTheme, useWebAppClosingConfirmation} from 'vue-tg'
 import moment from 'moment';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
@@ -16,6 +17,7 @@ const lootboxContent = ref({
     energy: 0,
     isOpen: false
 });
+
 
 
 /* skinArea */
@@ -352,7 +354,7 @@ const claimDailyBooster = () => {
     display: flex;
     align-items: center;
     margin: 10px;
-    background: rgba(212, 255, 58, 0.367);
+    background: rgba(167, 167, 167, 0.533);
     color: #fff;
     padding: 10px;
     border-radius: 15px;

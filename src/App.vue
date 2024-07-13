@@ -11,6 +11,8 @@ const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
+const { getCurrentBg } = userStore
+
 useWebAppViewport().expand()
 useWebAppClosingConfirmation().enableClosingConfirmation()
 useWebAppTheme().headerColor.value = "#ff72e3";

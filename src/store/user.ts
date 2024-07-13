@@ -55,11 +55,13 @@ export const useUserStore = defineStore('user', {
     state: () => ({
         user: null as User | null,
         boosts: null as Boosts | null,
-        skin: 0 as number | null
+        skin: 0 as number | null,
+        bg: "#ff72e3" as string | null
     }),
     getters: {
         getAccessToken: (state) => state.user?.access_token,
-        getCurrentSkin: (state) => state.skin
+        getCurrentSkin: (state) => state.skin,
+        getCurrentBg: (state) => state.bg
     },
     actions: {
         setSkin(newSkin: number) {
