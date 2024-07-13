@@ -47,19 +47,19 @@ onMounted(() => {
       {
           skins[i].isUnlock = true;
       }
-
-      if (!user) {
-        isUserLoggedIn.value = true
-        return
-      }
-      locale.value = user.language_code;
-      isUserLoggedIn.value = true
-      if (user.auto_farmer_profit > 0) {
-        farmerPopup.value = true
-        farmerPopupText.value = `The Farmer mined ${user.auto_farmer_profit} coins.`
-        farmerProfit.value = user.auto_farmer_profit
-      }
     });
+
+    if (!user) {
+      isUserLoggedIn.value = true
+      return
+    }
+    locale.value = user.language_code;
+    isUserLoggedIn.value = true
+    if (user.auto_farmer_profit > 0) {
+      farmerPopup.value = true
+      farmerPopupText.value = `The Farmer mined ${user.auto_farmer_profit} coins.`
+      farmerProfit.value = user.auto_farmer_profit
+    }
   })
 
   rechargeID = setInterval(() => {
