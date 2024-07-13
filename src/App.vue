@@ -42,14 +42,11 @@ onMounted(() => {
   userStore.login(useWebApp().initData).then(user => {
     console.log(user)
     userStore.getSkins().then(mySkins => {
-      if(mySkins > 1)
+      for(let i = 0; i < mySkins; i++)
       {
-        for(let i = 0; i < mySkins; i++)
-        {
-            skins[i].isUnlock = true;
-        }
-      } 
-    });
+          skins[i].isUnlock = true;
+      }
+    })
 
     if (!user) {
       isUserLoggedIn.value = true
