@@ -83,6 +83,27 @@ export const useUserStore = defineStore('user', {
             this.skin = response.data.current_skin;
             return response.data.skins;
         },
+        async updateUserCurrentSkin(id: number)
+        {
+            if (!this.user) {
+                return
+            }
+            const response = await axios.post(
+                `${import.meta.env.VITE_API_HOST}/buySkin`,
+                {
+                  skinId: id
+                },
+                {
+                  headers: {
+                    'x-api-key': this.user.access_token
+                  }
+                }
+            );
+            if(response.data.sucess)
+            {
+                this.skin = id;
+            }
+        },
         async buyNewSkin(skinId: number)
         {
             if (!this.user) {

@@ -167,6 +167,7 @@ function setNewUserDick(id: number){
     if(skins[id].isUnlock)
     {
         setSkin(id);
+        userStore.updateUserCurrentSkin(id);
     }
     else
     {
