@@ -5,6 +5,7 @@ import { useUserStore } from './store/user'
 import { useRoute, useRouter } from 'vue-router';
 import Popup from '@/components/Popup.vue'
 import {useI18n} from "vue-i18n";
+import { skins } from './components/skins/skinBase';
 
 const router = useRouter()
 const route = useRoute()
@@ -36,9 +37,17 @@ const farmerPopupClose = () => {
 onMounted(() => {
   const { locale } = useI18n();
   console.log(import.meta.env.VITE_API_HOST);
-  userStore.testRequest();
+  userStore.testRequest();  
+
   userStore.login(useWebApp().initData).then(user => {
     console.log(user)
+    userStore.getSkins().then(mySkins => {
+      for(let i = 0; i < mySkins; i++)
+      {
+          skins[i].isUnlock = true;
+      }
+    });
+
     if (!user) {
       isUserLoggedIn.value = true
       return

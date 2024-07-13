@@ -3,6 +3,7 @@ import { useUserStore } from '@/store/user';
 import { ref } from 'vue';
 import Balance from '../account/Balance.vue';
 import { useWebAppPopup } from 'vue-tg'
+import question from "@/assets/images/question.svg";
 import moment from 'moment';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
@@ -15,6 +16,14 @@ const lootboxContent = ref({
     energy: 0,
     isOpen: false
 });
+
+
+/* skinArea */
+import { skins } from './skinBase';
+import { kStringMaxLength } from 'buffer';
+const { setSkin } = userStore;
+
+
 
 
 
@@ -41,6 +50,11 @@ const selectedBoost = ref({
     action: t("boosts.upgrade")
 });
 
+
+const selectedSkin = ref({
+    id: 0,
+    price: 1000
+});
 
 function showPurchasePopup(boost: string) {
     if (!userStore.boosts || !userStore.user) {
@@ -145,6 +159,39 @@ function showPurchasePopup(boost: string) {
     justOpened.value = true;
 }
 
+function setNewUserDick(id: number){
+    if (!userStore.boosts || !userStore.user) {
+        return;
+    }
+    console.log(`Clicked skin: ${id}`);
+    if(skins[id].isUnlock)
+    {
+        setSkin(id);
+    }
+    else
+    {
+        if(id != 0 && skins[id - 1].isUnlock)
+        {
+            if ((1000 * id) > userStore.user.balance) {
+                useWebAppPopup().showAlert("You don't have enough coins to buy this")
+                return;
+            }
+            isPopupVisible.value = true;
+            justOpened.value = true;
+            selectedSkin.value.id = id;
+            selectedSkin.value.price = 1000 * id;
+            console.log(isPopupVisible.value)
+        }
+    }
+}
+
+
+
+function checkBeforeIndex(index: number) {
+    if(index <= 0) return;
+    if(skins[index - 1].isUnlock) return true;
+}
+
 const purchaseBoost = () => {
     if (selectedBoost.value.id === 'daily_lootbox') {
         // Припустимо, ви вирішили, що в коробці "випало" 1000 монет
@@ -178,51 +225,17 @@ const claimDailyBooster = () => {
 
 <template>
     <Balance />
+    <div class="Bg"></div>
     <div class="boosts">
-        <div class="boost" @click="showPurchasePopup('multitap')">
-            <div class="icon-box">👆</div>
-            <div class="text-container">
-                <div>{{ $t("boosts.multitap.name") }}<span class="badge">{{ userStore.boosts?.current_mine_level }} {{ $t("boosts.level") }}</span></div>
-                <div class="price">🍆 {{ userStore.boosts?.mine_level_price.toLocaleString() }}</div>
-            </div>
-        </div>
-        <div class="boost" @click="showPurchasePopup('energy')">
-            <div class="icon-box">⚡️</div>
-            <div class="text-container">
-                <div>
-                  {{ $t("boosts.energy.name") }}
-                    <span v-if="(userStore.boosts?.current_energy_level ?? 0) < 4" class="badge">{{
-                        userStore.boosts?.current_energy_level }} {{ $t("boosts.level") }}</span>
-                    <span v-else class="badge">{{ $t("boosts.maxLevelShort") }}</span>
+        
+        <div v-for="skin in skins" :key="skin.id">
+                <div class="boost" @click="setNewUserDick(skin.id)">
+                    <img v-if="skin.isUnlock" :src="skin.skin" :alt="'Skin ' + skin.id" :style="{ width: '170px', height: '170px' }">
+                    <div v-else class="lockImagePrice">
+                        <img :src="question" :style="{ width: '100px', height: '100px' }" />
+                        <span v-if="checkBeforeIndex(skin.id)" :style="{ color: '#aeaeae', fontSize: '25px', marginTop: '15px'}">{{ 1000 * skin.id }}🍆</span>
+                    </div>
                 </div>
-                <div v-if="(userStore.boosts?.current_energy_level ?? 0) < 4" class="price">🍆 {{
-                    userStore.boosts?.energy_level_price.toLocaleString() }}</div>
-            </div>
-        </div>
-        <div class="boost" @click="showPurchasePopup('max_energy')">
-            <div class="icon-box">🔋</div>
-            <div class="text-container">
-                <div>{{ $t("boosts.maxEnergy.name") }}<span class="badge">{{ (userStore.user?.max_energy_level ?? 0) + 1 }} {{ $t("boosts.level") }}</span></div>
-                <div class="price">🍆 {{ userStore.boosts?.max_energy_price.toLocaleString() }}</div>
-            </div>
-        </div>
-        <div class="boost daily-boost" @click="showPurchasePopup('auto_farmer')">
-            <div class="icon-box">👨‍🌾</div>
-            <div class="text-container">
-                <div>{{ $t("boosts.autoFarmer.name") }}</div>
-                <div v-if="!(userStore.user?.auto_farmer ?? false)" class="price">🍆 {{
-                    userStore.boosts?.auto_farmer_price.toLocaleString() }}</div>
-                <div v-else>✅ Enabled</div>
-            </div>
-        </div>
-        <div class="boost daily-boost" @click="showPurchasePopup('daily_lootbox')">
-            <div class="icon-box">🎁</div>
-            <div class="text-container">
-                <div>{{ $t("boosts.dailyLootbox.name") }}</div>
-                <div v-if="moment(userStore.user?.daily_booster_available_at).isBefore(moment())">{{ $t("boosts.available") }}</div>
-                <div class="price" v-else>⏳ {{ moment(userStore.user?.daily_booster_available_at ?? new Date()).fromNow() }}
-                </div>
-            </div>
         </div>
     </div>
     <!-- Модальне вікно для купівлі бусту -->
@@ -230,26 +243,18 @@ const claimDailyBooster = () => {
 <!--        <div class="popup-overlay" @click="closePopup"></div>-->
         <div class="popup-content"  v-click-outside="closePopup">
             <div class="popup-header">
-                <h2>{{ selectedBoost.name }}</h2>
+                <h2>New skin</h2>
                 <button class="close-button" @click="closePopup">
                   <svg class="close-icon" xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 30 30" width="16px" height="16px">
                     <path d="M 7 4 C 6.744125 4 6.4879687 4.0974687 6.2929688 4.2929688 L 4.2929688 6.2929688 C 3.9019687 6.6839688 3.9019687 7.3170313 4.2929688 7.7070312 L 11.585938 15 L 4.2929688 22.292969 C 3.9019687 22.683969 3.9019687 23.317031 4.2929688 23.707031 L 6.2929688 25.707031 C 6.6839688 26.098031 7.3170313 26.098031 7.7070312 25.707031 L 15 18.414062 L 22.292969 25.707031 C 22.682969 26.098031 23.317031 26.098031 23.707031 25.707031 L 25.707031 23.707031 C 26.098031 23.316031 26.098031 22.682969 25.707031 22.292969 L 18.414062 15 L 25.707031 7.7070312 C 26.098031 7.3170312 26.098031 6.6829688 25.707031 6.2929688 L 23.707031 4.2929688 C 23.316031 3.9019687 22.682969 3.9019687 22.292969 4.2929688 L 15 11.585938 L 7.7070312 4.2929688 C 7.5115312 4.0974687 7.255875 4 7 4 z"/>
                   </svg>
                 </button>
             </div>
-            <div v-if="!lootboxContent.isOpen" class="popup-body">
-                <p>{{ selectedBoost.description }}</p>
+            <div class="popup-body">
+                <p>Unlock new skin?</p>
                 <p v-for="spec in selectedBoost.nextLevelSpec" class="boost-desc-hint">{{ spec }}</p>
-                <p v-if="selectedBoost.price != 0">🍆{{ selectedBoost.price.toLocaleString() }}<span v-if="selectedBoost.next_level != 0" class="price-hint">/ {{
-                    selectedBoost.next_level }}
-                        level</span></p>
+                <p v-if="selectedBoost.price != 0">🍆{{ selectedSkin.price }}</p>
                 <button class="boost-purchase-button" @click="purchaseBoost">{{ selectedBoost.action }}</button>
-            </div>
-            <div v-else class="lootbox-items">
-                <p class="lootbox-item">Your gift:</p>
-                <p v-if="lootboxContent.coin > 0">🍆 +{{ lootboxContent.coin }}</p>
-                <p v-if="lootboxContent.energy > 0">⚡️ +{{ lootboxContent.energy }}</p>
-                <button style="margin-top:10px" class="boost-purchase-button" @click="claimDailyBooster">Claim</button>
             </div>
         </div>
     </div>
@@ -265,17 +270,46 @@ const claimDailyBooster = () => {
     font-size: 24px;
 }
 
-.boosts {
+
+.Bg{
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     background: #010300a3;
     position: absolute;
+}
+
+.lockImagePrice {
+    width: 170px;
+    height: 170px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.lockImage {
+    visibility: hidden;
+    width: 170px;
+    height: 170px;
+    background: #2c2c2c;
+}
+
+.boosts {
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
     justify-content: center;
     backdrop-filter: blur(5px);
+}
+
+.boostContainer{
+    display: flex;
+    flex-wrap: wrap;
 }
 
 .boost {
