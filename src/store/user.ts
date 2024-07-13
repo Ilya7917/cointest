@@ -80,7 +80,7 @@ export const useUserStore = defineStore('user', {
                     'x-api-key': this.user.access_token,
                 }
             });
-            this.setSkin(response.data.current_skin);
+            // this.setSkin(response.data.current_skin);
             return response.data.skins;
         },
         async buyNewSkin(skinId: number)
