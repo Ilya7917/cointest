@@ -2,6 +2,7 @@
 import { useLeaderboardStore } from '@/store/leaderboard';
 import { useUserStore } from '@/store/user';
 import { onMounted, ref } from 'vue';
+import { useWebAppPopup } from 'vue-tg'
 
 
 const leaderboardStore = useLeaderboardStore()
@@ -9,6 +10,7 @@ const userStore = useUserStore()
 const user = userStore.user
 
 onMounted(() => {
+  useWebAppPopup().showAlert(`User avatar: ${user?.avatar_url}`)
   leaderboardStore.fetchDailyLeaderboard()
   leaderboardStore.fetchMonthlyLeaderboard()
   leaderboardStore.fetchLeaderboard()

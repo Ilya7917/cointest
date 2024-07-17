@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory} from 'vue-router'
+import { useWebAppPopup } from 'vue-tg'
 
 const routes = [
     {
@@ -18,7 +19,10 @@ const routes = [
     },
     {
         path: '/referrals', name: 'referrals', component: () => import('@/components/Referrals.vue')
-    }
+    },
+    {
+        path: '/posts', name: 'posts', component: () => { useWebAppPopup().showAlert("👨‍💻 In developing")}
+    },
 ]
 
 const router = createRouter({
