@@ -10,7 +10,6 @@ const userStore = useUserStore()
 const user = userStore.user
 
 onMounted(() => {
-  useWebAppPopup().showAlert(`User avatar: ${user?.avatar_url}`)
   leaderboardStore.fetchDailyLeaderboard()
   leaderboardStore.fetchMonthlyLeaderboard()
   leaderboardStore.fetchLeaderboard()
