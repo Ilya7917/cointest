@@ -46,9 +46,17 @@ export const useChannelsStore = defineStore('channels', {
                     'x-api-key': userStore.getAccessToken,
                 },
             });
-            alert(response.data)
             this.myChannels = response.data.channels
             return true;
+        },
+        async getMyChannels(){
+            const userStore = useUserStore();
+            const response = await axios.get(`${import.meta.env.VITE_API_HOST}/getMyChannels`, {
+                headers: {
+                    'x-api-key': userStore.getAccessToken,
+                }
+            });
+            this.myChannels = response.data.channels
         }
     },
 })

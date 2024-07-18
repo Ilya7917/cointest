@@ -12,13 +12,23 @@ const selectedChannel = ref({
     id: 0,
     title: "",
     reward: 0,
-    invite_link: ""
+    invite_link: "",
+    status: "",
 });
 onMounted(() => {
   channelsStore.fetchChannels();
+  channelsStore.getMyChannels();
 });
 
 const openChannelLink = (channel: Channel) => {
+  if(channelsStore.myChannels?.length != null && channelsStore.myChannels?.length > 0) {
+      let index = channelsStore.myChannels.findIndex(x => x.channelId == channel.id);
+      if(index != -1)
+      {
+        selectedChannel.value.status = channelsStore.myChannels[index].status
+      }
+  }
+
   // channel.is_available = false
   selectedChannel.value.id = channel.id
   selectedChannel.value.reward = channel.reward
@@ -45,7 +55,8 @@ const onPressStartButton = () => {
     if(result)
     {
         isPopupVisible.value = false;
-        wn.openTelegramLink(selectedChannel.value.invite_link)  
+        wn.openTelegramLink(selectedChannel.value.invite_link)
+        channelsStore.getMyChannels();  
     }
   })
 }
@@ -114,7 +125,7 @@ const channels = [
             <div class="popup-body">
                 <p>{{ $t("earn.selectedChannel") }}</p>
                 <p>🍆{{ selectedChannel.reward }}</p>
-                <button class="boost-purchase-button" @click="onPressStartButton">{{  $t("earn.startRewardButton") }}</button>
+                <button class="boost-purchase-button" @click="selectedChannel.status == 'init' ? onPressStartButton : onPressStartButton">{{ selectedChannel.status == "init" ? "Claim" : $t("earn.startRewardButton") }}</button>
             </div>
         </div>
     </div>
