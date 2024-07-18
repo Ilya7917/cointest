@@ -33,7 +33,9 @@ const messages = {
     earn: {
       name: "Earn",
       channels: "Channels",
-      rewardReached: "Reward reached"
+      rewardReached: "Reward reached",
+      selectedChannel: `Subscribe to the channel and get`,
+      startRewardButton: "Start"
     },
     boosts: {
       level: "level",
@@ -106,7 +108,9 @@ const messages = {
     earn: {
       name: "Заработок",
       channels: "Каналы",
-      rewardReached: "Получено"
+      rewardReached: "Получено",
+      selectedChannel: `Подпишитесь на канал и получите`,
+      startRewardButton: "Начать"
     },
     boosts: {
       level: "уровень",

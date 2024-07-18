@@ -24,6 +24,24 @@ export const useChannelsStore = defineStore('channels', {
                 }
             });
             this.channels = response.data;
+        },
+        async startChannel(channel: Channel) {
+            const userStore = useUserStore();
+            const response = await axios.post(`${import.meta.env.VITE_API_HOST}/initUserChannel`,
+                {
+                    id: channel.id
+                },
+                {
+                headers: {
+                    'x-api-key': userStore.getAccessToken,
+                },
+            });
+
+            if(response.data.sucess)
+            {
+                return true;
+            }
+            return false;
         }
     },
 })
