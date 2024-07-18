@@ -100,7 +100,7 @@ const channels = [
       </div>
     </div>
 
-    <div class="boost-purchase-popup" :class="{ 'visible': isPopupVisible }">
+    <div v-if="isPopupVisible" class="boost-purchase-popup" :class="{ 'visible': isPopupVisible }">
 <!--        <div class="popup-overlay" @click="closePopup"></div>-->
         <div class="popup-content" v-click-outside="closePopup">
             <div class="popup-header">
@@ -188,10 +188,10 @@ const channels = [
 .boost-purchase-popup {
   transform: translateY(100%); /* Start off the bottom of the screen */
   width: 100%;
-  position: absolute;
+  height: 100%;
+  position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
   display: flex;
   justify-content: center;
   align-items: flex-end; /* Align the modal at the bottom */

@@ -36,12 +36,7 @@ export const useChannelsStore = defineStore('channels', {
                     'x-api-key': userStore.getAccessToken,
                 },
             });
-
-            if(response.data.sucess)
-            {
-                return true;
-            }
-            return false;
+            return true;
         }
     },
 })
