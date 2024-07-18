@@ -8,6 +8,8 @@ const wn = useWebAppNavigation()
 const isPopupVisible = ref(false);
 const justOpened = ref(false);
 
+const { getChannels } = channelsStore;
+
 const selectedChannel = ref({
     id: 0,
     title: "",
@@ -22,10 +24,11 @@ onMounted(() => {
 
 const openChannelLink = (channel: Channel) => {
   if(channelsStore.myChannels?.length != null && channelsStore.myChannels?.length > 0) {
-      let index = channelsStore.myChannels.findIndex(x => x.channelId == channel.id);
+      let index = channelsStore.myChannels.findIndex(x => x.ChannelID == channel.id);
+      console.log(channelsStore.myChannels[0].ChannelID);
       if(index != -1)
       {
-        selectedChannel.value.status = channelsStore.myChannels[index].status
+        selectedChannel.value.status = channelsStore.myChannels[index].Status
       }
   }
 
@@ -125,7 +128,7 @@ const channels = [
             <div class="popup-body">
                 <p>{{ $t("earn.selectedChannel") }}</p>
                 <p>🍆{{ selectedChannel.reward }}</p>
-                <button class="boost-purchase-button" @click="selectedChannel.status == 'init' ? onPressStartButton : onPressStartButton">{{ selectedChannel.status == "init" ? "Claim" : $t("earn.startRewardButton") }}</button>
+                <button class="boost-purchase-button" @click="onPressStartButton">{{ $t("earn.startRewardButton") }}</button>
             </div>
         </div>
     </div>

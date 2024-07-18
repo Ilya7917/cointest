@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { defineStore } from 'pinia'
+import { isProxy, toRaw } from 'vue';
 import { useUserStore } from './user';
 
 export interface Channel {
@@ -12,11 +13,11 @@ export interface Channel {
 };
 
 export interface ChannelMember {
-    channelId: number;
-    userId: number;
-    status: string;
-    updatedAt: Date | null;
-    createdAt: Date | null;
+    ChannelID: number;
+    UserId: number;
+    Status: string;
+    UpdatedAt: Date | null;
+    CreatedAt: Date | null;
 
 }
 
@@ -25,6 +26,9 @@ export const useChannelsStore = defineStore('channels', {
         channels: null as Channel[] | null,
         myChannels: null as ChannelMember[] | null,
     }),
+    getters: {
+        getChannels: (state) => state.myChannels,
+    },
     actions: {
         async fetchChannels() {
             const userStore = useUserStore();
@@ -34,6 +38,7 @@ export const useChannelsStore = defineStore('channels', {
                 }
             });
             this.channels = response.data;
+            console.log(response.data);
         },
         async startChannel(channel: Channel) {
             const userStore = useUserStore();
@@ -56,7 +61,7 @@ export const useChannelsStore = defineStore('channels', {
                     'x-api-key': userStore.getAccessToken,
                 }
             });
-            this.myChannels = response.data.channels
+            this.myChannels = toRaw(response.data.channels)
         }
     },
 })
