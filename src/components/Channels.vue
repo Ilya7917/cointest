@@ -2,11 +2,17 @@
 import {Channel, useChannelsStore} from '@/store/channel';
 import { useWebAppNavigation } from 'vue-tg'
 import { onMounted, ref } from "vue";
+import { differenceInHours } from 'date-fns';
+import { useWebAppPopup } from 'vue-tg'
+import { useI18n } from 'vue-i18n';
+import { se } from 'date-fns/locale';
+const { t } = useI18n();
 
 const channelsStore = useChannelsStore();
 const wn = useWebAppNavigation()
 const isPopupVisible = ref(false);
-const justOpened = ref(false);
+const isCanView = ref(false);
+
 
 const { getChannels } = channelsStore;
 
@@ -16,19 +22,44 @@ const selectedChannel = ref({
     reward: 0,
     invite_link: "",
     status: "",
+    createdAt: "",
+
 });
 onMounted(() => {
-  channelsStore.fetchChannels();
-  channelsStore.getMyChannels();
+  channelsStore.fetchChannels().then(() => {
+    channelsStore.getMyChannels().then(() => {
+      if(channelsStore.myChannels?.length != null && channelsStore.myChannels?.length > 0){
+        channelsStore.myChannels?.map(channel => {
+            console.log(channel);
+            if(channel.Status == "init") {
+              let index = channelsStore.channels?.findIndex(x => x.id == channel.ChannelID);
+              if (channelsStore.channels && index != null && index != -1) {
+                channelsStore.channels[index].is_available = true;
+                console.log(channelsStore.channels[index].is_available)
+              }
+            }
+            if(channel.Status == "rewarded")
+            {
+              let index = channelsStore.channels?.findIndex(x => x.id == channel.ChannelID);
+              if (channelsStore.channels && index != null && index != -1) {
+                channelsStore.channels[index].is_available = false;
+                console.log(channelsStore.channels[index].is_available)
+              }
+            }
+        })
+      }
+      isCanView.value = true;
+    });
+  });
 });
 
 const openChannelLink = (channel: Channel) => {
   if(channelsStore.myChannels?.length != null && channelsStore.myChannels?.length > 0) {
       let index = channelsStore.myChannels.findIndex(x => x.ChannelID == channel.id);
-      console.log(channelsStore.myChannels[0].ChannelID);
       if(index != -1)
       {
         selectedChannel.value.status = channelsStore.myChannels[index].Status
+        selectedChannel.value.createdAt = channelsStore.myChannels[index].CreatedAt?.toLocaleString() || '';
       }
   }
 
@@ -38,7 +69,6 @@ const openChannelLink = (channel: Channel) => {
   selectedChannel.value.title = channel.title
   selectedChannel.value.invite_link = channel.invite_link
   isPopupVisible.value = false;
-  justOpened.value = false;
   setTimeout(reOpenPopup, 100)
   console.log(isPopupVisible);
   // wn.openTelegramLink(channel.invite_link)
@@ -72,6 +102,36 @@ function closePopup() {
   isPopupVisible.value = false;
 }
 
+const checkTimeTillGetReward = () => {
+  console.log("check time: " + selectedChannel.value.createdAt);
+  const createdAt = new Date(selectedChannel.value.createdAt);
+  const now = new Date();
+
+  const hoursDifference = differenceInHours(now, createdAt);
+  console.log("check time: " + selectedChannel.value.createdAt);
+  console.log("Hours since request: " + hoursDifference);
+
+  if (hoursDifference >= 1) {
+    const channel =  {
+      id: selectedChannel.value.id,
+      title: selectedChannel.value.title,
+      invite_link: selectedChannel.value.invite_link,
+      reward: 0,
+      is_available: true
+    }
+    channelsStore.rewardChannel(channel).then(() => {
+      console.log("request finished");
+      isPopupVisible.value = false;
+      if (channelsStore.channels) {
+          var index = channelsStore.channels.findIndex(x => x.id == selectedChannel.value.id);
+          channelsStore.channels[index].is_available = false;
+      }
+    })
+  } else {
+    useWebAppPopup().showAlert(t("earn.waitRewardText"))
+  }
+}
+
 const channels = [  
   {
     id: 0,
@@ -98,14 +158,13 @@ const channels = [
     <div class="channels-title">
       📢 {{ $t("earn.channels") }}
     </div>
-    <div class="channels-list">
-      <div v-for="channel in channelsStore.channels" :key="channel.id" @click="openChannelLink(channel)" class="channel">
+    <div v-if="isCanView" class="channels-list">
+      <div v-for="channel in channelsStore.channels?.filter(c => c.is_available)"  :key="channel.id" @click="openChannelLink(channel)" class="channel">
         <div class="channel-info">
           <span class="name">{{ channel.title }}</span>
         </div>
         <div class="channel-action">
           <span v-if="channel.is_available" class="reward">🍆 {{ channel.reward.toLocaleString() }}</span>
-          <span v-else class="reward">💠 {{ $t("earn.rewardReached") }}</span>
           <svg class="arrow">
             <use xlink:href="@/assets/images/sprite.svg#chevron-right"></use>
           </svg>
@@ -126,9 +185,9 @@ const channels = [
                 </button>
             </div>
             <div class="popup-body">
-                <p>{{ $t("earn.selectedChannel") }}</p>
+                <p>{{ selectedChannel.status == "init" ? $t("earn.waitRewardText") : $t("earn.selectedChannel") }}</p>
                 <p>🍆{{ selectedChannel.reward }}</p>
-                <button class="boost-purchase-button" @click="onPressStartButton">{{ $t("earn.startRewardButton") }}</button>
+                <button class="boost-purchase-button" @click="selectedChannel.status == 'init' ? checkTimeTillGetReward() : onPressStartButton()">{{ selectedChannel.status == "init" ?  $t("earn.getRewardButton") : $t("earn.startRewardButton") }}</button>
             </div>
         </div>
     </div>

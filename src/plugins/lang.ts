@@ -35,7 +35,10 @@ const messages = {
       channels: "Channels",
       rewardReached: "Reward reached",
       selectedChannel: `Subscribe to the channel and get`,
-      startRewardButton: "Start"
+      startRewardButton: "Start",
+      waitRewardText: "Wait 1 hours for moderation check to claim the prize.",
+      getRewardButton: "Claim",
+      notEnoughTime: "Give us 1 hour, the task is still being reviewed"
     },
     boosts: {
       level: "level",
@@ -110,7 +113,10 @@ const messages = {
       channels: "Каналы",
       rewardReached: "Получено",
       selectedChannel: `Подпишитесь на канал и получите`,
-      startRewardButton: "Начать"
+      startRewardButton: "Начать",
+      waitRewardText: "Подождите 1 час, пока пройдет проверка модерации, чтобы получить приз.",
+      getRewardButton: "Получить",
+      notEnoughTime: "Дайте нам 1 час, задание ещё на проверке"
     },
     boosts: {
       level: "уровень",
