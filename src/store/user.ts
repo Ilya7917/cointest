@@ -49,6 +49,13 @@ export interface MiningResult {
     newEnergy: number;
 }
 
+export interface newPost {
+    image: File;
+    isPrivate: boolean;
+    description: string;
+    price: number;
+}
+
 
 
 export const useUserStore = defineStore('user', {
@@ -105,6 +112,27 @@ export const useUserStore = defineStore('user', {
             {
                 this.skin = id;
             }
+        },
+        async createPost(post: newPost)
+        {
+            console.log(post);
+            const response = await axios.post(
+                `${import.meta.env.VITE_API_HOST}/post/create`,
+                {
+                  image: post.image,
+                  isPrivate: post.isPrivate,
+                  description: post.description,
+                  price: post.price 
+                },
+                {
+                  headers: {
+                    'x-api-key': "a7e4c514d1f3f9065adb465b98f28e7493ed762f8a7ad87abf62c6e8ab1e3e26"
+                  }
+                }
+            );
+            console.log(response);
+            return false;
+            
         },
         async buyNewSkin(skinId: number)
         {
