@@ -16,7 +16,7 @@ export const skins = [
     {
         id: 1,
         skin: skin2,
-        isUnlock: true,
+        isUnlock: false,
     },
     {
         id: 2,

@@ -4,7 +4,7 @@ import { onMounted, ref } from 'vue';
 import loadingIcon from "@/assets/images/loading.svg";
 import AcceptIcon from "@/assets/images/acceptet.svg";
 import AddIcon from "@/assets/images/addIcon.svg";
-import Balance from '../account/Balance.vue';
+import DonateBalance from '../account/DonateBalance.vue';
 import { useWebAppPopup } from 'vue-tg'
 import question from "@/assets/images/question.svg";
 import {useWebAppViewport, useWebApp, useWebAppBackButton, useWebAppTheme, useWebAppClosingConfirmation} from 'vue-tg'
@@ -57,6 +57,7 @@ const { setSkin, getCurrentSkin } = userStore;
 
 onMounted(()=>{
     pageState.value = "posts";
+    userStore.getMyBoughtPosts();
     userStore.getPosts();
     console.log(pageState.value);
 })
@@ -121,7 +122,6 @@ const onAddFile = (e: Event) => {
         newPosts.value.image = files[0];
         isNextButton.value = true;
     }
-    console.log(newPosts)
 }
 
 const onAddDescription = (e: Event) => {
@@ -142,12 +142,13 @@ const nextButtonChangeState = () => {
 
 const uploadPostState = ref(false);
 const createNewPost = () => {
+    /*
     if(!userStore.user) return;
 
     if(userStore.user.balance < 5000) {
         useWebAppPopup().showAlert("Недостаточно 🍆 для создания поста");
     }
-
+    */
     newPosts.value.isPrivate = isPostOptionsSet.value;
     if (newPosts.value.image != null) {
         const newPost = {
@@ -175,12 +176,92 @@ const createNewPost = () => {
 
 const getImageUrl = (path: string) => { return `${import.meta.env.VITE_API_HOST}/uploads/${path}`; }
 
+const popupState = ref("close")
+
+const currentPost = ref({
+    id: 0,
+    price: 0,
+})
+const setStatePopup = (state :string, postid: number, price: number ) => { 
+    switch(state)
+    {
+        case "unlock":
+            popupState.value = state;
+            currentPost.value.id = postid;
+            currentPost.value.price = price;
+            break;
+        case "donate":
+            currentPost.value.id = postid;
+            popupState.value = state;
+            break;
+    } 
+}
+
+const unlockNewPost = () => {
+    // сюда проверку на баланс юзера
+    console.log(currentPost.value.id);
+    
+    userStore.unlockPost(currentPost.value.id).then(result => {
+        if(result) {
+            if(userStore.posts != null) {
+                let index = userStore.posts.findIndex(x => x.ID == currentPost.value.id);
+                if(index != -1){
+                    userStore.posts[index].IsPrivate = false;
+                    userStore.getMyBoughtPosts();
+                }
+            }
+        }
+    });
+    
+}
+
+const checkIfItMyPost = (ownerId: number, postId: number) => {
+    if(!userStore.user) return;
+    if(ownerId !== userStore.user.id) {
+        if(checkIfBouthPost(postId)){
+            return false;
+        } else {
+            return true;
+        }
+    }
+    return false;
+}
+
+const checkIfBouthPost = (postId: number) => {
+    if(userStore.boughtPosts != null)
+    {
+        let index = userStore.boughtPosts.findIndex(x => x.ID == postId);
+        if(index != -1){
+            return true;
+        }
+    }
+    return false;
+}
+
+const donatedValue = ref(0);
+
+const donateToPost = () => {
+    if(!userStore.user) return;
+    if(userStore.user.balance < Number(donatedValue.value)) useWebAppPopup().showAlert("Недостаточно средств на счету");
+    userStore.donatePost(currentPost.value.id, donatedValue.value).then(result => {
+        if(result) {
+            if(userStore.posts != null){
+                let index = userStore.posts.findIndex(x => x.ID == currentPost.value.id);
+                if(index != -1){
+                    userStore.posts[index].Donated += Number(donatedValue.value);
+                }
+            }
+        }
+    });
+}
+
+
 </script>
 
 <template>
     <div class="Bg"></div>
     <div class="navMenu">
-        <button class="mypost-button" @click="changePageState(pageState == 'create' ? 'posts' : 'myposts')">{{ pageState == "create" ? "Posts" :  "My posts" }}</button>
+        <button class="mypost-button" @click="changePageState(pageState == 'create' ? 'posts' : pageState == 'myposts' ? 'posts' : 'myposts')">{{ pageState == "create" ? "Posts" : pageState == 'posts' ? "My posts" : 'Posts' }}</button>
         <img v-if="pageState !== 'create'" :src="AddIcon" alt="Your Icon" :style="{ height: '50px' }" @click="changePageState('create')" />
     </div>
     <div v-if="pageState === 'create'" class="createPostMenu">
@@ -240,31 +321,84 @@ const getImageUrl = (path: string) => { return `${import.meta.env.VITE_API_HOST}
                         <img :src="post.AvatarURL" :style="{ width: '60px', height: '60px', padding: '5px', borderRadius: '30px' }"/>
                         <span :style="{ fontSize: '25px', marginLeft: '15px' }">{{ post.OwnerName }}</span>
                     </div>
-                    <div class="postImage" :style="{ height: '250px', width:'100%', position: 'relative',  filter: post.IsPrivate ? 'blur(0px)' : 'blur(0px)'}" >
+                    <div class="postImage" :style="{ height: '250px', width:'100%', position: 'relative',  filter: checkIfItMyPost(post.OwnerID, post.ID) ? 'blur(25px)' : 'blur(0px)'}" >
                         <img :src="getImageUrl(post.ImagePath)" :style="{ height: 'inherit', width:'100%', backgroundRepeat: 'no-repeat', backgroundSize: 'cover'}" />
                     </div>
                     <div class="postDescription" :style="{ height: '50px', alignItems: 'center', display:'flex' }">
                         <span :style="{ fontSize: '25px' }">{{ post.Description }}</span>
                     </div>
-                    <div v-if="post.IsPrivate && post.OwnerID !== userStore.user?.id" class="unlock" :style="{ height: '70px', display:'flex', alignItems:'center', justifyContent: 'space-between', padding: '15px' }">
+                    <div v-if="post.IsPrivate && post.OwnerID !== userStore.user?.id && userStore.boughtPosts?.findIndex(x => x.PostID == post.ID) == -1" class="unlock" :style="{ height: '70px', display:'flex', alignItems:'center', justifyContent: 'space-between', padding: '15px' }">
                         <span :style="{ fontSize: '25px' }">🍆{{ post.Price }}</span>
-                        <button class="boost-purchase-button">Unlock</button>
+                        <button class="boost-purchase-button" @click="setStatePopup('unlock', post.ID, post.Price)">Unlock</button>
                     </div>
-                    <div v-if="post.OwnerID !== userStore.user?.id" class="donations" :style="{ height: '70px', display:'flex', alignItems:'center', justifyContent: 'space-between', padding: '15px' }">
-                        <span :style="{ fontSize: '25px' }">🍆{{ post.Donated }}</span>
-                        <button class="boost-purchase-button">Donate</button>
+                    <div class="donations" :style="{ height: '70px', display:'flex', alignItems:'center', justifyContent: 'space-between', padding: '15px' }">
+                        <span :style="{ fontSize: '25px' }">Donated: 🍆{{ post.Donated }}</span>
+                        <button v-if="post.OwnerID !== userStore.user?.id" class="boost-purchase-button" @click="setStatePopup('donate', post.ID, post.Price)">Donate</button>
                     </div>
                 </div>
         </div>
     </div>
-    <!-- Модальне вікно для купівлі бусту -->
-    <!-- Умовно відображаємо вміст коробки, якщо він існує
-    <div v-if="lootboxContent.isOpen" class="lootbox-item">
-        {{ lootboxContent }}
-    </div> -->
+
+
+
+
+    <div class="boost-purchase-popup" :class="{ 'visible': popupState == 'unlock' || popupState == 'donate' }" @click="() => { popupState = 'close' }">
+<!--        <div class="popup-overlay" @click="closePopup"></div>-->
+        <div class="popup-content">
+            <div class="popup-header">
+                <h2>{{ popupState == 'unlock' ?  'Unlock post?' : 'Donate post?' }}</h2>
+                <button class="close-button" @click="() => { popupState = 'close' }">
+                  <svg class="close-icon" xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 30 30" width="16px" height="16px">
+                    <path d="M 7 4 C 6.744125 4 6.4879687 4.0974687 6.2929688 4.2929688 L 4.2929688 6.2929688 C 3.9019687 6.6839688 3.9019687 7.3170313 4.2929688 7.7070312 L 11.585938 15 L 4.2929688 22.292969 C 3.9019687 22.683969 3.9019687 23.317031 4.2929688 23.707031 L 6.2929688 25.707031 C 6.6839688 26.098031 7.3170313 26.098031 7.7070312 25.707031 L 15 18.414062 L 22.292969 25.707031 C 22.682969 26.098031 23.317031 26.098031 23.707031 25.707031 L 25.707031 23.707031 C 26.098031 23.316031 26.098031 22.682969 25.707031 22.292969 L 18.414062 15 L 25.707031 7.7070312 C 26.098031 7.3170312 26.098031 6.6829688 25.707031 6.2929688 L 23.707031 4.2929688 C 23.316031 3.9019687 22.682969 3.9019687 22.292969 4.2929688 L 15 11.585938 L 7.7070312 4.2929688 C 7.5115312 4.0974687 7.255875 4 7 4 z"/>
+                  </svg>
+                </button>
+            </div>
+            <div v-if="popupState == 'unlock'" class="popup-body">
+                <p>Price:</p>
+                <p>🍆{{ currentPost.price }}</p>
+                <button class="boost-purchase-button" :style="{ width:'100%'}" @click="unlockNewPost">Unlock post</button>
+            </div>
+            <div v-else class="popup-body">
+                <div class="slidecontainer" :style="{ marginTop: '30px'}">
+                    <input type="range" min="0" :max="userStore.user?.balance" class="slider" id="myRange" v-model="donatedValue">
+                </div>
+                <p>🍆{{ donatedValue }}</p>
+                <button v-if="donatedValue > 0" class="boost-purchase-button" :style="{ width:'100%'}" @click="donateToPost">Donate post</button>
+            </div>
+        </div>
+    </div>
+    <!-- My posts area -->
+     <div v-if="pageState == 'myposts'" class="myPosts">
+        <DonateBalance />
+        <div v-for="item in posts" class="postProfile" @click="">
+            <div class="icon-box">👆</div>
+            <div class="text-container">
+                <div>{{ $t("boosts.multitap.name") }}<span class="badge">{{ userStore.boosts?.current_mine_level }} {{ $t("boosts.level") }}</span></div>
+                <div class="price">🍆 {{ userStore.boosts?.mine_level_price.toLocaleString() }}</div>
+            </div>
+        </div>
+     </div>
 </template>
 
 <style scoped>
+.myPosts {
+    display: flex;
+    margin-top: 100px;
+    flex-direction: column;
+    backdrop-filter: blur(5px);
+}
+
+.postProfile {
+    display: flex;
+    align-items: center;
+    margin: 10px;
+    background: rgb(167 167 167 / 21%);
+    color: #fff;
+    padding: 10px;
+    border-radius: 15px;
+    cursor: pointer;
+}
+
 input[type="file"]::file-selector-button {
     background-color: #4CAF50;
     color: white;
@@ -521,5 +655,106 @@ input[type=number] {
 }
 .checkbox-wrapper-7 .tgl-ios:checked + .tgl-btn:active:after {
     margin-left: -0.8em;
+}
+
+
+.boost-purchase-popup {
+  transform: translateY(100%); /* Start off the bottom of the screen */
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end; /* Align the modal at the bottom */
+  z-index: 1000;
+  transition: transform 0.2s ease; /* Smooth transition for the transform property */
+  color: white;
+}
+
+.boost-purchase-popup.visible {
+  transform: translateY(0); /* Position it inside the viewport */
+}
+
+.popup-content {
+  position: relative;
+  background: "blue";
+  backdrop-filter: blur(100px);
+  -webkit-backdrop-filter: blur(30px);
+  border-radius: 10px 10px 0 0; /* Тільки верхні кути округлені */
+  z-index: 1001;
+  padding: 20px 20px 45px;
+  width: 100%;
+  box-shadow: 0 0 30px 10px rgba(0, 0, 0, 0.5);
+}
+
+.popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.close-button {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 24px;
+    color: white;
+}
+
+.popup-body h3,
+.popup-body p {
+    margin: 10px 0;
+}
+.boost-desc-hint {
+    color: #c5c5c5;
+    font-size: 14px;
+}
+
+.price-hint {
+    color: #aeaeae;
+    margin-left: 5px;
+    font-size: 12px;
+}
+
+/* slider */
+
+.slidecontainer {
+  width: 100%;
+}
+
+.slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 15px;
+  border-radius: 5px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+
+.slider:hover {
+  opacity: 1;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: #04AA6D;
+  cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: #04AA6D;
+  cursor: pointer;
 }
 </style>

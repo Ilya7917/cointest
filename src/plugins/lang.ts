@@ -6,6 +6,7 @@ const messages = {
     account: {
       yourBalance: "Your balance",
       youDontHaveEnough: "You don't have enough coins to buy this",
+      yourDonateBalance: "Your donate balance"
     },
     referrals: {
       title: "Referrals",
@@ -84,6 +85,7 @@ const messages = {
     account: {
       yourBalance: "Ваш баланс",
       youDontHaveEnough: "У вас недостаточно монет для покупки этого",
+      yourDonateBalance: "Ваш донатный баланс"
     },
     referrals: {
       title: "Рефералы",

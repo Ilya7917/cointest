@@ -4,6 +4,7 @@ import axios from 'axios'
 export interface User {
     id: number;
     balance: number;
+    posts_balance: number;
     first_name: string;
     language_code: string;
     energy: number;
@@ -68,6 +69,13 @@ export interface allPosts {
     Donated: number;
 }
 
+export interface boughtPosts {
+    ID: number;
+    IsUnlock: true;
+    PostID: number;
+    UserID: number;
+}
+
 
 
 export const useUserStore = defineStore('user', {
@@ -76,7 +84,8 @@ export const useUserStore = defineStore('user', {
         boosts: null as Boosts | null,
         skin: 0 as number | null,
         bg: "#ff72e3" as string | null,
-        posts: null as allPosts[] | null
+        posts: null as allPosts[] | null,
+        boughtPosts: null as boughtPosts[] | null
     }),
     getters: {
         getAccessToken: (state) => state.user?.access_token,
@@ -127,7 +136,9 @@ export const useUserStore = defineStore('user', {
             }
         },
         async getPosts(){
-            if(!this.user) return;
+            if (!this.user) {
+                return
+            }
             const response = await axios.get(`${import.meta.env.VITE_API_HOST}/getPosts`, {
                 headers: {
                     'x-api-key': this.user.access_token,
@@ -137,9 +148,70 @@ export const useUserStore = defineStore('user', {
             this.posts = response.data;
             
         },
+        async unlockPost(postId: number) {
+            if (!this.user) {
+                return
+            }
+            const response = await axios.post(
+                `${import.meta.env.VITE_API_HOST}/unlockPost`,
+                {
+                   postId: postId
+                },
+                {
+                  headers: {
+                    'x-api-key': this.user.access_token,
+                  }
+                }
+            );
+            console.log(response);
+            if(response.data.sucess){
+                this.user = response.data.user
+                return true;
+            }
+            return false;
+        },
+        async getMyBoughtPosts() {
+            if (!this.user) {
+                return
+            }
+            const response = await axios.get(`${import.meta.env.VITE_API_HOST}/boughtPosts`, {
+                headers: {
+                    'x-api-key': this.user.access_token,
+                }
+            });
+            console.log(response);
+            if(response.data.length > 0) 
+            {
+                this.boughtPosts = response.data;
+                console.log(this.boughtPosts);
+            }
+        },
+        async donatePost(postId: number, amount: number){
+            if (!this.user) {
+                return
+            }
+            const response = await axios.post(
+                `${import.meta.env.VITE_API_HOST}/donatePost`,
+                {
+                   postId: postId,
+                   amount: Number(amount)
+                },
+                {
+                  headers: {
+                    'x-api-key': this.user.access_token,
+                  }
+                }
+            );
+            if(response.data.sucess) {
+                this.user = response.data.user
+                return true;
+            } 
+        },
         async createPost(post: newPost)
         {
-            if(!this.user) return;
+            if (!this.user) {
+                return
+            }
             const formData = new FormData();
             formData.append('image', post.image);
             formData.append('isPrivate', post.isPrivate.toString()); // Преобразование булевого значения в строку
@@ -156,7 +228,10 @@ export const useUserStore = defineStore('user', {
               });
               const result = await response.json();
               console.log(result);
-              if(result.success) return true;
+              if(result.success) {
+                this.user = result.user;
+                return true;
+              }
               return false;
             } catch (error) {
               console.error('Error:', error);
