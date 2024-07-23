@@ -225,7 +225,7 @@ export const useUserStore = defineStore('user', {
               });
               const result = await response.json();
               console.log(result);
-              if(result.success) {
+              if(result.sucess) {
                 this.user = result.user;
                 return true;
               }
