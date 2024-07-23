@@ -142,13 +142,11 @@ const nextButtonChangeState = () => {
 
 const uploadPostState = ref(false);
 const createNewPost = () => {
-    /*
     if(!userStore.user) return;
 
     if(userStore.user.balance < 5000) {
         useWebAppPopup().showAlert("Недостаточно 🍆 для создания поста");
     }
-    */
     newPosts.value.isPrivate = isPostOptionsSet.value;
     if (newPosts.value.image != null) {
         const newPost = {
@@ -383,7 +381,6 @@ const donateToPost = () => {
 <style scoped>
 .myPosts {
     display: flex;
-    margin-top: 100px;
     flex-direction: column;
     backdrop-filter: blur(5px);
 }
