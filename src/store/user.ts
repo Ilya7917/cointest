@@ -209,17 +209,14 @@ export const useUserStore = defineStore('user', {
         },
         async createPost(post: newPost)
         {
-            if (!this.user) {
-                return
-            }
+            if(!this.user) return;
             const formData = new FormData();
             formData.append('image', post.image);
             formData.append('isPrivate', post.isPrivate.toString()); // Преобразование булевого значения в строку
             formData.append('description',post.description);
             formData.append('price', post.price.toString()); // Преобразование числа в строку
         
-            try {
-              const response = await fetch(`${import.meta.env.VITE_API_HOST}/createPost`, {
+            const response = await fetch(`${import.meta.env.VITE_API_HOST}/createPost`, {
                 method: 'POST',
                 body: formData,
                 headers: {
@@ -233,9 +230,6 @@ export const useUserStore = defineStore('user', {
                 return true;
               }
               return false;
-            } catch (error) {
-              console.error('Error:', error);
-            }
         },
         async buyNewSkin(skinId: number)
         {
