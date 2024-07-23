@@ -289,7 +289,7 @@ const donateToPost = () => {
                 </div>
                 <div v-if="isPostOptionsSet" :style="{ marginTop: '50px', textAlign:'center'}">
                         <span :style="{ fontSize: '15px', fontWeight:'bold'}">Цена за разблокировку:</span>
-                        <input type="number" v-model="newPosts.price"/>
+                        <input type="number" @change="(e) => { newPosts.price = Number((e.target as HTMLInputElement).value); console.log(newPosts.price) }"/>
                 </div>
                 <div :style="{ marginTop: '50px', textAlign:'center'}">
                     <span :style="{ fontSize: '15px', fontWeight:'bold'}">Стоимость создания поста: 5000🍆</span>
