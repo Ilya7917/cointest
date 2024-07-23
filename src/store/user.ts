@@ -56,6 +56,18 @@ export interface newPost {
     price: number;
 }
 
+export interface allPosts {
+    ID: number;
+    ImagePath: string;
+    OwnerName: string;
+    OwnerID: number;
+    AvatarURL: string;
+    IsPrivate: boolean;
+    Description: string;
+    Price: number;
+    Donated: number;
+}
+
 
 
 export const useUserStore = defineStore('user', {
@@ -63,7 +75,8 @@ export const useUserStore = defineStore('user', {
         user: null as User | null,
         boosts: null as Boosts | null,
         skin: 0 as number | null,
-        bg: "#ff72e3" as string | null
+        bg: "#ff72e3" as string | null,
+        posts: null as allPosts[] | null
     }),
     getters: {
         getAccessToken: (state) => state.user?.access_token,
@@ -113,26 +126,41 @@ export const useUserStore = defineStore('user', {
                 this.skin = id;
             }
         },
+        async getPosts(){
+            if(!this.user) return;
+            const response = await axios.get(`${import.meta.env.VITE_API_HOST}/getPosts`, {
+                headers: {
+                    'x-api-key': this.user.access_token,
+                }
+            });
+            console.log(response);
+            this.posts = response.data;
+            
+        },
         async createPost(post: newPost)
         {
-            console.log(post);
-            const response = await axios.post(
-                `${import.meta.env.VITE_API_HOST}/post/create`,
-                {
-                  image: post.image,
-                  isPrivate: post.isPrivate,
-                  description: post.description,
-                  price: post.price 
-                },
-                {
-                  headers: {
-                    'x-api-key': "a7e4c514d1f3f9065adb465b98f28e7493ed762f8a7ad87abf62c6e8ab1e3e26"
-                  }
+            if(!this.user) return;
+            const formData = new FormData();
+            formData.append('image', post.image);
+            formData.append('isPrivate', post.isPrivate.toString()); // Преобразование булевого значения в строку
+            formData.append('description',post.description);
+            formData.append('price', post.price.toString()); // Преобразование числа в строку
+        
+            try {
+              const response = await fetch(`${import.meta.env.VITE_API_HOST}/createPost`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'x-api-key': this.user.access_token,
                 }
-            );
-            console.log(response);
-            return false;
-            
+              });
+              const result = await response.json();
+              console.log(result);
+              if(result.success) return true;
+              return false;
+            } catch (error) {
+              console.error('Error:', error);
+            }
         },
         async buyNewSkin(skinId: number)
         {

@@ -5,7 +5,6 @@ import { onMounted, ref } from "vue";
 import { differenceInHours } from 'date-fns';
 import { useWebAppPopup } from 'vue-tg'
 import { useI18n } from 'vue-i18n';
-import { se } from 'date-fns/locale';
 const { t } = useI18n();
 
 const channelsStore = useChannelsStore();
