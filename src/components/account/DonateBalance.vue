@@ -1,12 +1,16 @@
 <script lang="ts" setup>
 import { useUserStore } from '@/store/user';
+import test from 'node:test';
 import { computed, ref, watch } from 'vue';
 
 const userStore = useUserStore()
 
+const props = defineProps<{
+  popupState: Function; 
+}>();
 
 const fontSize = computed(() => {
-  const balanceLength = userStore.user?.posts_balance.toString().length || 0;
+  const balanceLength = userStore.posts_balance?.toString().length || 0;
   if (balanceLength < 5) return '44px'; // базовий розмір для коротких значень
   if (balanceLength < 8) return '39px';
   if (balanceLength < 12) return '34px'; // менший розмір для середніх значень
@@ -14,7 +18,7 @@ const fontSize = computed(() => {
   return '24px'; // ще менший розмір для довгих значень
 });
 
-const animatedBalance = ref(userStore.user?.posts_balance || 0);
+const animatedBalance = ref(userStore.posts_balance || 0);
 // Функція для плавної зміни балансу
 function animateBalance(newBalance: number) {
   const startBalance = animatedBalance.value;
@@ -39,9 +43,14 @@ function animateBalance(newBalance: number) {
 }
 
 // Спостерігаємо за зміною балансу і анімуємо цифри
-watch(() => (userStore.user?.posts_balance ?? 0), (newBalance: number) => {
+watch(() => (userStore.posts_balance ?? 0), (newBalance: number) => {
   animateBalance(newBalance);
 }, { immediate: true });
+
+
+const testF = () => {
+  props.popupState("change")
+}
 </script>
 
 <template>
@@ -50,6 +59,11 @@ watch(() => (userStore.user?.posts_balance ?? 0), (newBalance: number) => {
     <div class="balance__wrapper">
       <div class="balance" :style="{ fontSize: fontSize }">{{ animatedBalance.toLocaleString() }}</div>
     </div>
+  </div>
+  <div v-if="userStore.posts_balance != null && userStore.posts_balance > 0" :style="{ display:'flex', justifyContent:'center'}">
+      <div :style="{ height: '70px', display:'flex', alignItems:'center', justifyContent: 'space-between', padding: '15px' }">
+          <button  class="boost-purchase-button" @click="testF">Обменять</button>
+      </div>
   </div>
 </template>
 
@@ -64,6 +78,18 @@ watch(() => (userStore.user?.posts_balance ?? 0), (newBalance: number) => {
   /* Додаємо цю властивість */
   pointer-events: none;
   /* Це запобігає взаємодії з елементом через курсор */
+}
+
+.boost-purchase-button {
+    padding: 10px 20px;
+    border: none;
+    background-color: #1a6d18;
+    color: white;
+    width: 170px;
+    font-size: 20px;
+    font-weight: bold;
+    border-radius: 5px;
+    cursor: pointer;
 }
 
 .balance-hint {

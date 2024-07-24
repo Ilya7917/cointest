@@ -14,6 +14,7 @@ export interface Channel {
     reward: number;
     avatar_url?: string;
     is_available: boolean;
+    is_whale: boolean;
 };
 
 export interface ChannelMember {
@@ -28,6 +29,7 @@ export interface ChannelMember {
 export const useChannelsStore = defineStore('channels', {
     state: () => ({
         channels: null as Channel[] | null,
+        whales: null as Channel[] | null,
         myChannels: null as ChannelMember[] | null,
     }),
     getters: {
@@ -42,6 +44,15 @@ export const useChannelsStore = defineStore('channels', {
                 }
             });
             this.channels = response.data;
+        },
+        async fetchWhales() {
+            const userStore = useUserStore();
+            const response = await axios.get<Channel[]>(`${import.meta.env.VITE_API_HOST}/whales`, {
+                headers: {
+                    'x-api-key': userStore.getAccessToken,
+                }
+            });
+            this.whales = response.data;
             console.log(response.data);
         },
         async startChannel(channel: Channel) {
@@ -57,6 +68,23 @@ export const useChannelsStore = defineStore('channels', {
             });
             this.myChannels = response.data.channels
             return true;
+        },
+        async createWhale(title: string, link: string, rewarded: number) {
+            const userStore = useUserStore();
+            const response = await axios.post(`${import.meta.env.VITE_API_HOST}/createWhale`,
+                {
+                    title: title,
+                    link: link,
+                    rewarded: rewarded
+                },
+                {
+                headers: {
+                    'x-api-key': userStore.getAccessToken,
+                },
+            });
+            console.log(response)
+            if(response.data.sucess) return true;
+            return false;
         },
         async getMyChannels(){
             const userStore = useUserStore();

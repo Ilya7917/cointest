@@ -51,6 +51,7 @@ const progressNewPosts = [
 /* skinArea */
 import { kStringMaxLength } from 'buffer';
 import { isAbsolute } from 'path';
+import { create } from 'domain';
 const { setSkin, getCurrentSkin } = userStore;
 
 
@@ -59,6 +60,8 @@ onMounted(()=>{
     pageState.value = "posts";
     userStore.getMyBoughtPosts();
     userStore.getPosts();
+    userStore.getMyPosts();
+    userStore.getMyPostsBalance();
     console.log(pageState.value);
 })
 
@@ -142,13 +145,11 @@ const nextButtonChangeState = () => {
 
 const uploadPostState = ref(false);
 const createNewPost = () => {
-    /*
     if(!userStore.user) return;
 
     if(userStore.user.balance < 5000) {
         useWebAppPopup().showAlert("Недостаточно 🍆 для создания поста");
     }
-    */
     newPosts.value.isPrivate = isPostOptionsSet.value;
     if (newPosts.value.image != null) {
         const newPost = {
@@ -163,9 +164,11 @@ const createNewPost = () => {
                 setTimeout(() => {
                     progressPost.value = 0;
                     pageState.value = "posts";
+                    progressNewPosts.forEach(x => { if(x.id !== 0) { x.isActive = false } });
                     uploadPostState.value = true;
                     uploadPostState.value = false;
                     userStore.getPosts();
+                    userStore.getMyPosts();
                 }, 2500);
             }
         });
@@ -181,24 +184,25 @@ const popupState = ref("close")
 const currentPost = ref({
     id: 0,
     price: 0,
+    imagePath: "",
+    decription: "",
+    donated: 0
 })
-const setStatePopup = (state :string, postid: number, price: number ) => { 
-    switch(state)
-    {
-        case "unlock":
-            popupState.value = state;
-            currentPost.value.id = postid;
-            currentPost.value.price = price;
-            break;
-        case "donate":
-            currentPost.value.id = postid;
-            popupState.value = state;
-            break;
-    } 
+const setStatePopup = (state :string, postid: number, price: number, imagePath: string | null, description: string | null, donated: number | null) => { 
+    popupState.value = state;
+    currentPost.value.id = postid;
+    currentPost.value.price = price;
+    currentPost.value.imagePath = imagePath !== null ? imagePath : "";
+    currentPost.value.decription = description !== null ? description : "";
+    currentPost.value.donated = donated !== null ? donated : 0;
 }
 
 const unlockNewPost = () => {
-    // сюда проверку на баланс юзера
+    if(!userStore.user) return;
+    if(userStore.user.balance < currentPost.value.price) {
+        useWebAppPopup().showAlert("Недостаточно средств на счету");
+        return;
+    };
     console.log(currentPost.value.id);
     
     userStore.unlockPost(currentPost.value.id).then(result => {
@@ -242,7 +246,10 @@ const donatedValue = ref(0);
 
 const donateToPost = () => {
     if(!userStore.user) return;
-    if(userStore.user.balance < Number(donatedValue.value)) useWebAppPopup().showAlert("Недостаточно средств на счету");
+    if(userStore.user.balance < Number(donatedValue.value)) {
+        useWebAppPopup().showAlert("Недостаточно средств на счету");
+        return;
+    }
     userStore.donatePost(currentPost.value.id, donatedValue.value).then(result => {
         if(result) {
             if(userStore.posts != null){
@@ -255,6 +262,39 @@ const donateToPost = () => {
     });
 }
 
+
+const textForPopup = (state: string) =>{
+    switch(state) {
+        case "unlock":
+            return "Unlock post?"
+            break;
+        case "donate":
+            return "Donate post?"
+            break;
+        case "visible":
+            return `Post: ${currentPost.value.id}`
+            break;
+        case "change":
+            return "Exchange donated dicks for basic ones?"
+            break;
+    }
+}
+
+const exchangeValue = ref(0);
+
+const exchangeDonateMoney = () => {
+    if(!userStore.user) return;
+    if(userStore.posts_balance != null && userStore.posts_balance < exchangeValue.value) {
+        useWebAppPopup().showAlert("ⓘ Недостаточно средств для вывода!");
+    }
+    useWebAppPopup().showAlert("ⓘ Система удерживает 30% комиссию при переводе средств с донатного счёта на основной! ⓘ");
+    userStore.exchangeDonateMoney(exchangeValue.value).then(result => {
+        if(result) {
+            if(userStore.posts_balance != null)
+            userStore.posts_balance -= exchangeValue.value
+        }
+    });
+}
 
 </script>
 
@@ -289,7 +329,7 @@ const donateToPost = () => {
                 </div>
                 <div v-if="isPostOptionsSet" :style="{ marginTop: '50px', textAlign:'center'}">
                         <span :style="{ fontSize: '15px', fontWeight:'bold'}">Цена за разблокировку:</span>
-                        <input type="number" @change="(e) => { newPosts.price = Number((e.target as HTMLInputElement).value); console.log(newPosts.price) }"/>
+                        <input type="number" @keydown.enter="createNewPost" @change="(e) => { newPosts.price = Number((e.target as HTMLInputElement).value); console.log(newPosts.price) }"/>
                 </div>
                 <div :style="{ marginTop: '50px', textAlign:'center'}">
                     <span :style="{ fontSize: '15px', fontWeight:'bold'}">Стоимость создания поста: 5000🍆</span>
@@ -322,18 +362,18 @@ const donateToPost = () => {
                         <span :style="{ fontSize: '25px', marginLeft: '15px' }">{{ post.OwnerName }}</span>
                     </div>
                     <div class="postImage" :style="{ height: '250px', width:'100%', position: 'relative',  filter: checkIfItMyPost(post.OwnerID, post.ID) ? 'blur(25px)' : 'blur(0px)'}" >
-                        <img :src="getImageUrl(post.ImagePath)" :style="{ height: 'inherit', width:'100%', backgroundRepeat: 'no-repeat', backgroundSize: 'cover'}" />
+                        <img :src="getImageUrl(post.ImagePath)" :style="{ height: 'inherit', width:'100%', backgroundRepeat: 'no-repeat', backgroundSize: 'cover', objectFit:'contain'}" />
                     </div>
                     <div class="postDescription" :style="{ height: '50px', alignItems: 'center', display:'flex' }">
                         <span :style="{ fontSize: '25px' }">{{ post.Description }}</span>
                     </div>
                     <div v-if="post.IsPrivate && post.OwnerID !== userStore.user?.id && userStore.boughtPosts?.findIndex(x => x.PostID == post.ID) == -1" class="unlock" :style="{ height: '70px', display:'flex', alignItems:'center', justifyContent: 'space-between', padding: '15px' }">
                         <span :style="{ fontSize: '25px' }">🍆{{ post.Price }}</span>
-                        <button class="boost-purchase-button" @click="setStatePopup('unlock', post.ID, post.Price)">Unlock</button>
+                        <button class="boost-purchase-button" @click="setStatePopup('unlock', post.ID, post.Price, null, null, null)">Unlock</button>
                     </div>
                     <div class="donations" :style="{ height: '70px', display:'flex', alignItems:'center', justifyContent: 'space-between', padding: '15px' }">
                         <span :style="{ fontSize: '25px' }">Donated: 🍆{{ post.Donated }}</span>
-                        <button v-if="post.OwnerID !== userStore.user?.id" class="boost-purchase-button" @click="setStatePopup('donate', post.ID, post.Price)">Donate</button>
+                        <button v-if="post.OwnerID !== userStore.user?.id" class="boost-purchase-button" @click="setStatePopup('donate', post.ID, post.Price, null,null, null)">Donate</button>
                     </div>
                 </div>
         </div>
@@ -342,11 +382,11 @@ const donateToPost = () => {
 
 
 
-    <div class="boost-purchase-popup" :class="{ 'visible': popupState == 'unlock' || popupState == 'donate' }" @click="() => { popupState = 'close' }">
+    <div class="boost-purchase-popup" :class="{ 'visible': popupState == 'unlock' || popupState == 'donate' || popupState == 'visible' || popupState == 'change' }" @click="() => { popupState = 'close' }">
 <!--        <div class="popup-overlay" @click="closePopup"></div>-->
         <div class="popup-content">
             <div class="popup-header">
-                <h2>{{ popupState == 'unlock' ?  'Unlock post?' : 'Donate post?' }}</h2>
+                <h2>{{ textForPopup(popupState) }}</h2>
                 <button class="close-button" @click="() => { popupState = 'close' }">
                   <svg class="close-icon" xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 30 30" width="16px" height="16px">
                     <path d="M 7 4 C 6.744125 4 6.4879687 4.0974687 6.2929688 4.2929688 L 4.2929688 6.2929688 C 3.9019687 6.6839688 3.9019687 7.3170313 4.2929688 7.7070312 L 11.585938 15 L 4.2929688 22.292969 C 3.9019687 22.683969 3.9019687 23.317031 4.2929688 23.707031 L 6.2929688 25.707031 C 6.6839688 26.098031 7.3170313 26.098031 7.7070312 25.707031 L 15 18.414062 L 22.292969 25.707031 C 22.682969 26.098031 23.317031 26.098031 23.707031 25.707031 L 25.707031 23.707031 C 26.098031 23.316031 26.098031 22.682969 25.707031 22.292969 L 18.414062 15 L 25.707031 7.7070312 C 26.098031 7.3170312 26.098031 6.6829688 25.707031 6.2929688 L 23.707031 4.2929688 C 23.316031 3.9019687 22.682969 3.9019687 22.292969 4.2929688 L 15 11.585938 L 7.7070312 4.2929688 C 7.5115312 4.0974687 7.255875 4 7 4 z"/>
@@ -358,23 +398,34 @@ const donateToPost = () => {
                 <p>🍆{{ currentPost.price }}</p>
                 <button class="boost-purchase-button" :style="{ width:'100%'}" @click="unlockNewPost">Unlock post</button>
             </div>
-            <div v-else class="popup-body">
+            <div v-if="popupState == 'donate'" class="popup-body">
                 <div class="slidecontainer" :style="{ marginTop: '30px'}">
                     <input type="range" min="0" :max="userStore.user?.balance" class="slider" id="myRange" v-model="donatedValue">
                 </div>
                 <p>🍆{{ donatedValue }}</p>
                 <button v-if="donatedValue > 0" class="boost-purchase-button" :style="{ width:'100%'}" @click="donateToPost">Donate post</button>
             </div>
+            <div v-if="popupState == 'visible'">
+                <img :src="getImageUrl(currentPost.imagePath)" :style="{ height: '200px', width:'100%', backgroundRepeat: 'no-repeat', objectFit:'contain'}" />
+                <p v-if="currentPost.decription !== ''">{{ currentPost.decription }}</p>
+                <p>Donated: 🍆{{ currentPost.donated }}</p>
+            </div>
+            <div v-if="popupState == 'change'">
+                <div class="slidecontainer" :style="{ marginTop: '30px'}">
+                    <input type="range" min="0" :max="userStore.posts_balance !== null ? userStore.posts_balance : 0" class="slider" id="myRange" v-model="exchangeValue">
+                </div>
+                <p>🍆{{ exchangeValue }}</p>
+                <button v-if="exchangeValue > 0" class="boost-purchase-button" :style="{ width:'100%'}" @click="exchangeDonateMoney">Exchange</button>
+            </div>
         </div>
     </div>
     <!-- My posts area -->
      <div v-if="pageState == 'myposts'" class="myPosts">
-        <DonateBalance />
-        <div v-for="item in posts" class="postProfile" @click="">
-            <div class="icon-box">👆</div>
-            <div class="text-container">
-                <div>{{ $t("boosts.multitap.name") }}<span class="badge">{{ userStore.boosts?.current_mine_level }} {{ $t("boosts.level") }}</span></div>
-                <div class="price">🍆 {{ userStore.boosts?.mine_level_price.toLocaleString() }}</div>
+        <DonateBalance :popupState="setStatePopup"/>
+        <div v-for="post in userStore.myPosts" class="postProfile" @click="setStatePopup('visible', post.ID, post.Price, post.ImagePath, post.Description, post.Donated)">
+            <div class="icon-box" :style="{ fontSize:'27px' }">🌐</div>
+            <div class="text-container" :style="{ display:'flex', justifyContent:'center' }">
+                <span :style="{ marginLeft: '11px' }">Пост: {{ post.ID }}</span>
             </div>
         </div>
      </div>
@@ -384,6 +435,7 @@ const donateToPost = () => {
 .myPosts {
     display: flex;
     flex-direction: column;
+    margin-top: 20%;
     backdrop-filter: blur(5px);
 }
 

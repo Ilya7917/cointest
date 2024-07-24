@@ -41,6 +41,9 @@ const messages = {
       getRewardButton: "Claim",
       notEnoughTime: "Give us 1 hour, the task is still being reviewed"
     },
+    whales: {
+      channels: "Whales",
+    },
     boosts: {
       level: "level",
       maxLevelShort: "max",
@@ -119,6 +122,9 @@ const messages = {
       waitRewardText: "Подождите 1 час, пока пройдет проверка модерации, чтобы получить приз.",
       getRewardButton: "Получить",
       notEnoughTime: "Дайте нам 1 час, задание ещё на проверке"
+    },
+    whales: {
+      channels: "Киты",
     },
     boosts: {
       level: "уровень",
