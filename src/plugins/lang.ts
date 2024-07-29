@@ -8,6 +8,9 @@ const messages = {
       youDontHaveEnough: "You don't have enough coins to buy this",
       yourDonateBalance: "Your donate balance"
     },
+    slots: {
+      bottom: 'Slots',
+    },
     referrals: {
       title: "Referrals",
       subtitle: "Your friends register using a personal link, you get 50% of the coins they earn",
@@ -89,6 +92,9 @@ const messages = {
       yourBalance: "Ваш баланс",
       youDontHaveEnough: "У вас недостаточно монет для покупки этого",
       yourDonateBalance: "Ваш донатный баланс"
+    },
+    slots: {
+      bottom: 'Слоты',
     },
     referrals: {
       title: "Рефералы",

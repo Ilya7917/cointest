@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import axios from 'axios'
+import { useWebAppPopup } from 'vue-tg'
 
 export interface User {
     id: number;
@@ -166,9 +167,7 @@ export const useUserStore = defineStore('user', {
             return false;
         },
         async unlockPost(postId: number) {
-            if (!this.user) {
-                return
-            }
+            if (!this.user) return;
             const response = await axios.post(
                 `${import.meta.env.VITE_API_HOST}/unlockPost`,
                 {
@@ -188,9 +187,7 @@ export const useUserStore = defineStore('user', {
             return false;
         },
         async getMyBoughtPosts() {
-            if (!this.user) {
-                return
-            }
+            if(!this.user) return;
             const response = await axios.get(`${import.meta.env.VITE_API_HOST}/boughtPosts`, {
                 headers: {
                     'x-api-key': this.user.access_token,
@@ -404,6 +401,36 @@ export const useUserStore = defineStore('user', {
                 }
             });
             return result.data
+        },
+        async spinSlot() {
+            if(!this.user) return;
+            const result = await axios.post(`${import.meta.env.VITE_API_HOST}/spin`, {}, {
+                headers: {
+                    'x-api-key': this.user.access_token,
+                }
+            });
+            if(result.data.sucess) {
+                this.user = result.data.user;
+                return true;
+            }
+            return false;
+            console.log(result);
+        },
+        async getReward(winCode: number) {
+            if(!this.user) return;
+            const result = await axios.post(`${import.meta.env.VITE_API_HOST}/reward`, {
+                code: winCode
+            }, {
+                headers: {
+                    'x-api-key': this.user.access_token,
+                }
+            });
+            if(result.data.sucess) {
+                this.user = result.data.user;
+                return true;
+            }
+            return false;
+            console.log(result);
         },
         recharge() {
             if (this.user) {

@@ -66,13 +66,18 @@ onMounted(() => {
 const openChannelLink = (channel: Channel, state: string) => {
   if(channelsStore.myChannels?.length != null && channelsStore.myChannels?.length > 0) {
       let index = channelsStore.myChannels.findIndex(x => x.ChannelID == channel.id);
+      console.log(index);
       if(index != -1)
       {
         selectedChannel.value.status = channelsStore.myChannels[index].Status
         selectedChannel.value.createdAt = channelsStore.myChannels[index].CreatedAt?.toLocaleString() || '';
       }
+      else {
+        selectedChannel.value.status = "";
+        selectedChannel.value.createdAt = '';
+      }
   }
-
+  console.log(selectedChannel);
   // channel.is_available = false
   selectedChannel.value.id = channel.id
   selectedChannel.value.reward = channel.reward
@@ -100,8 +105,13 @@ const onPressStartButton = () => {
     if(result)
     {
         isPopupVisible.value = false;
-        wn.openTelegramLink(selectedChannel.value.invite_link)
         channelsStore.getMyChannels();  
+        try{
+          wn.openTelegramLink(selectedChannel.value.invite_link)
+        }
+        catch{
+          console.log("Err");
+        }
     }
   })
 }
@@ -140,11 +150,15 @@ const checkTimeTillGetReward = () => {
           var index = channelsStore.channels.findIndex(x => x.id == selectedChannel.value.id);
           channelsStore.channels[index].is_available = false;
       }
+      selectedChannel.value.status = "";
+      selectedChannel.value.createdAt = '';
     })
   } else {
     useWebAppPopup().showAlert(t("earn.waitRewardText"))
   }
 }
+
+
 
 const popupState = ref("visible");
 const openCreateWhaleForm = () => {
@@ -160,15 +174,29 @@ const newWhaleData = ref({
   rewared: 0,
 })
 
-const createNewWhale = () => { 
-   if(newWhaleData.value.title == "" || newWhaleData.value.link == "" || newWhaleData.value.rewared == 0) return;
-   channelsStore.createWhale(newWhaleData.value.title, newWhaleData.value.link, newWhaleData.value.rewared).then(result => {
-    if(result) {
+function isValidTelegramUrl(url: string) {
+  const pattern = /^(https?:\/\/)?(www\.)?t\.me\/[a-zA-Z0-9_]{5,}$/;
+  return pattern.test(url);
+}
+
+
+async function createNewWhale() {
+  if (newWhaleData.value.title === "" || newWhaleData.value.link === "" || newWhaleData.value.rewared === 0) return;
+
+  if (!isValidTelegramUrl(newWhaleData.value.link)) {
+    console.error("Invalid Telegram URL format");
+    useWebAppPopup().showAlert(t("Invalid Telegram URL format"))
+    return;
+  }
+
+  channelsStore.createWhale(newWhaleData.value.title, newWhaleData.value.link, newWhaleData.value.rewared).then(result => {
+    if (result) {
       fetchFunction();
       isPopupVisible.value = false;
     }
-   });
+  });
 }
+
 
 const channels = [  
   {
@@ -186,16 +214,21 @@ const channels = [
     is_available: true
   }
 ]
+
+const handleEnter = (event: KeyboardEvent) => {
+  (event.target as HTMLInputElement).blur();
+};
+
 </script>
 
 <template>
 
-  <div class="telegram-channels" :style="{ overflowY: 'hidden'}">
+  <div class="telegram-channels">
     <div class="earn-title">
       🤑 {{ $t("earn.name") }}
     </div>
-    <div :style="{ display:'flex', flexDirection:'column' }">
-        <div :style="{ flex: '0 0 70%', overflowY: 'auto' }">
+    <div :style="{ display:'flex', flexDirection:'column', justifyContent:'space-between' }">
+        <div :style="{ height:'40vh' }">
           <div class="channels-title">
             📢 {{ $t("earn.channels") }}
           </div>
@@ -214,7 +247,7 @@ const channels = [
             </div>
           </div>
         </div>
-        <div :style="{ flex: '1 0 80%' }">
+        <div>
           <div :style="{ display:'flex', justifyContent:'space-between' }" >
             <div class="channels-title">
               🐳 {{ $t("whales.channels") }}
@@ -223,7 +256,7 @@ const channels = [
               <img :src="AddIcon" alt="Your Icon" :style="{ height: '45px', marginRight:'7px' }" />
             </div>
           </div>
-          <div v-if="isCanView" class="channels-list" :style="{ height: '45vh', overflowY:'scroll'}">
+          <div v-if="isCanView" class="channels-list" :style="{ height: '40vh', overflowY:'scroll'}">
             <div v-for="chan in channelsStore.whales?.filter(c => c.is_available)"  :key="chan.id" @click="openChannelLink(chan, 'visible')" class="channel">
               <div class="channel-info">
                 <span class="name">{{ chan.title }}</span>
@@ -259,7 +292,7 @@ const channels = [
                 <p>🍆{{ selectedChannel.reward }}</p>
                 <button class="boost-purchase-button" @click="selectedChannel.status == 'init' ? checkTimeTillGetReward() : onPressStartButton()">{{ selectedChannel.status == "init" ?  $t("earn.getRewardButton") : $t("earn.startRewardButton") }}</button>
             </div>
-            <div v-if="popupState == 'create'" class="popup-body" @keydown.enter="">
+            <div v-if="popupState == 'create'" class="popup-body" @keydown.enter="handleEnter" :style="{ overflowY: 'scroll' }">
               <div :style="{ display:'flex', flexDirection:'column', justifyContent:'center', marginTop:'30px'}">
                 <label for="fname" >Название канала</label>
                 <input type="text" id="fname" :style="{ width: '100%'}" name="fname" v-model="newWhaleData.title">
@@ -318,6 +351,7 @@ input[type=number] {
 }
 
 .telegram-channels {
+    overflow-y: hidden;
     background: #010300a3;
     position: absolute;
     top: 0;
@@ -402,7 +436,7 @@ input[type=number] {
   position: relative;
   background: rgba(256,256,256,.15);
   backdrop-filter: blur(100px);
-  -webkit-backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(300px);
   border-radius: 10px 10px 0 0; /* Тільки верхні кути округлені */
   z-index: 1001;
   padding: 20px 20px 45px;

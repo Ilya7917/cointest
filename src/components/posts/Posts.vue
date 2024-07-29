@@ -122,8 +122,47 @@ const onAddFile = (e: Event) => {
     const target = e.target as HTMLInputElement;
     const files = target.files;
     if (files && files.length > 0) {
-        newPosts.value.image = files[0];
-        isNextButton.value = true;
+        const file = files[0];
+        const reader = new FileReader();
+        
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                const MAX_WIDTH = 1024;
+                const MAX_HEIGHT = 1024;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                if(ctx != null) ctx.drawImage(img, 0, 0, width, height);
+
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        newPosts.value.image = new File([blob], file.name, { type: file.type });
+                        isNextButton.value = true;
+                    }
+                }, file.type, 0.8);
+            };
+            img.src = event.target?.result as string;
+        };
+
+        reader.readAsDataURL(file);
     }
 }
 
@@ -146,9 +185,9 @@ const nextButtonChangeState = () => {
 const uploadPostState = ref(false);
 const createNewPost = () => {
     if(!userStore.user) return;
-
     if(userStore.user.balance < 5000) {
         useWebAppPopup().showAlert("Недостаточно 🍆 для создания поста");
+        return;
     }
     newPosts.value.isPrivate = isPostOptionsSet.value;
     if (newPosts.value.image != null) {
@@ -173,11 +212,11 @@ const createNewPost = () => {
             }
         });
     } else {
-        console.error('No file selected');
+        useWebAppPopup().showAlert("Не выбрано изображение");
     }
 }
 
-const getImageUrl = (path: string) => { return `${import.meta.env.VITE_API_HOST}/uploads/${path}`; }
+const getImageUrl = (path: string) => { return path; }
 
 const popupState = ref("close")
 
@@ -204,7 +243,6 @@ const unlockNewPost = () => {
         return;
     };
     console.log(currentPost.value.id);
-    
     userStore.unlockPost(currentPost.value.id).then(result => {
         if(result) {
             if(userStore.posts != null) {
@@ -216,26 +254,43 @@ const unlockNewPost = () => {
             }
         }
     });
-    
+}
+
+const checkIfCanUnlockPost = (postId: number, ownerId: number) => {
+    if(!userStore.user) return;
+    if(userStore.user.id == ownerId) return false;
+    if(userStore.boughtPosts != null && userStore.boughtPosts?.length > 0) {
+        if(userStore.boughtPosts.findIndex(x => x.ID == postId)){
+            return false;
+        }
+        return true;
+    }
+    if(userStore.posts != null && userStore.posts[userStore.posts.findIndex(x => x.ID == postId)].IsPrivate) return true;
+    if(userStore.boughtPosts != null && userStore.boughtPosts.length < 0) return true;
+
 }
 
 const checkIfItMyPost = (ownerId: number, postId: number) => {
     if(!userStore.user) return;
-    if(ownerId !== userStore.user.id) {
+    if(userStore.user.id == ownerId) return false;
+    if(userStore.posts != null && !userStore.posts[userStore.posts.findIndex(x => x.ID == postId)].IsPrivate) return false;
+    if(ownerId != userStore.user.id) {
         if(checkIfBouthPost(postId)){
             return false;
         } else {
             return true;
         }
     }
-    return false;
+    return true;
 }
 
 const checkIfBouthPost = (postId: number) => {
-    if(userStore.boughtPosts != null)
+    if(userStore.boughtPosts != null && userStore.boughtPosts.length > 0)
     {
-        let index = userStore.boughtPosts.findIndex(x => x.ID == postId);
+        let index = userStore.boughtPosts.findIndex(x => x.PostID == postId);
+        console.log(index, postId);
         if(index != -1){
+            console.log(index);
             return true;
         }
     }
@@ -329,7 +384,7 @@ const exchangeDonateMoney = () => {
                 </div>
                 <div v-if="isPostOptionsSet" :style="{ marginTop: '50px', textAlign:'center'}">
                         <span :style="{ fontSize: '15px', fontWeight:'bold'}">Цена за разблокировку:</span>
-                        <input type="number" @keydown.enter="createNewPost" @change="(e) => { newPosts.price = Number((e.target as HTMLInputElement).value); console.log(newPosts.price) }"/>
+                        <input type="number" @keydown.enter="createNewPost" v-model="newPosts.price"/>
                 </div>
                 <div :style="{ marginTop: '50px', textAlign:'center'}">
                     <span :style="{ fontSize: '15px', fontWeight:'bold'}">Стоимость создания поста: 5000🍆</span>
@@ -367,7 +422,7 @@ const exchangeDonateMoney = () => {
                     <div class="postDescription" :style="{ height: '50px', alignItems: 'center', display:'flex' }">
                         <span :style="{ fontSize: '25px' }">{{ post.Description }}</span>
                     </div>
-                    <div v-if="post.IsPrivate && post.OwnerID !== userStore.user?.id && userStore.boughtPosts?.findIndex(x => x.PostID == post.ID) == -1" class="unlock" :style="{ height: '70px', display:'flex', alignItems:'center', justifyContent: 'space-between', padding: '15px' }">
+                    <div v-if="checkIfCanUnlockPost(post.ID, post.OwnerID)" class="unlock" :style="{ height: '70px', display:'flex', alignItems:'center', justifyContent: 'space-between', padding: '15px' }">
                         <span :style="{ fontSize: '25px' }">🍆{{ post.Price }}</span>
                         <button class="boost-purchase-button" @click="setStatePopup('unlock', post.ID, post.Price, null, null, null)">Unlock</button>
                     </div>
