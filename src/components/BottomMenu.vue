@@ -1,6 +1,13 @@
 <template>
   <div class="energy-section">
-    <div class="energy">
+    <div ref="skinsRef" :style="{ right:'15px', position:'fixed' }">
+        <router-link class="menu-item" :style="{ fontSize: '35px'}" to="/skins" tag="button">
+          🍆
+          <span>{{ $t("bottomMenu.skins") }}</span>
+        </router-link>
+    </div>
+
+    <div ref="energyRef" class="energy">
       <div class="energy-progress-bar">
       <div class="energy-progress" :style="{ width: ((userStore.user?.energy ?? 0) / (1000 + (userStore.user?.max_energy_level ?? 0) * 500) * 100) + '%' }"></div>
     </div>
@@ -24,9 +31,9 @@
         💰
         <span>{{ $t("bottomMenu.earn") }}</span>
       </router-link>
-      <router-link class="menu-item" to="/skins" tag="button">
-        🍆
-        <span>{{ $t("bottomMenu.skins") }}</span>
+      <router-link class="menu-item" to="/market" tag="button">
+        🛒
+        <span>{{ $t("bottomMenu.market") }}</span>
       </router-link>
       <router-link class="menu-item" to="/slots" tag="button">
         🎰
@@ -49,8 +56,23 @@
 
 <script lang="ts" setup>
 import { useUserStore } from '@/store/user';
+import { onMounted, ref } from 'vue';
 
 const userStore = useUserStore()
+
+const energyRef = ref<HTMLElement | null>(null);
+const skinsRef = ref<HTMLElement | null>(null);
+
+const updatePosition = () => {
+  if (energyRef.value && skinsRef.value) {
+    const energyRect = energyRef.value.getBoundingClientRect();
+    skinsRef.value.style.bottom = `${window.innerHeight - energyRect.top + 20}px`;
+  }
+};
+
+onMounted(async () => {
+  updatePosition();
+});
 </script>
 
 <style scoped>
@@ -62,6 +84,14 @@ const userStore = useUserStore()
   padding: 5px 15px 0;
   background: linear-gradient(0deg, #ffffff00, #ffffff42);
   box-shadow: inset 0px 1px 1px 1px #ffffff4a;
+}
+
+.circle-border {
+  display: inline-block;
+  padding: 10px; /* Увеличивает размер рамки */
+  border: 2px solid black; /* Толщина и цвет рамки */
+  border-radius: 50%; /* Делает рамку круглой */
+  text-align: center;
 }
 
 .energy-section {
@@ -121,6 +151,28 @@ const userStore = useUserStore()
 .menu-items {
   display: flex;
   justify-content: space-around;
+}
+
+.circle-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 2px solid white; /* Белая рамка */
+  padding: 10px;
+  border-radius: 50%; /* Круглая рамка */
+  font-weight: bold;
+  color: white;
+  font-size: 22px;
+  cursor: pointer;
+  text-decoration: none;
+  outline: none;
+  flex: 1 0 15%;
+  overflow: hidden;
+  text-align: center;
+  width: 100px; /* Фиксированная ширина для круговой рамки */
+  height: 100px; /* Фиксированная высота для круговой рамки */
 }
 
 .menu-item {

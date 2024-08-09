@@ -21,8 +21,11 @@ const routes = [
         path: '/slots', name: 'slots', component: () => useWebAppPopup().showAlert("In developing 🛠️")
     },
     {
-        path: '/posts', name: 'posts', component: () => useWebAppPopup().showAlert("In developing 🛠️")
+        path: '/posts', name: 'posts', component: () => import('@/components/posts/Posts.vue')
     },
+    {
+        path: '/market', name: 'market', component: () => import('@/components/market/Market.vue')
+    }
 ]
 
 const router = createRouter({
