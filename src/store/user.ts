@@ -5,7 +5,7 @@ import { id } from 'date-fns/locale';
 export interface User {
     id: number;
     balance: number;
-    post_balance: number;
+    posts_balance: number;
     first_name: string;
     username: string;
     language_code: string;
@@ -98,7 +98,7 @@ export const useUserStore = defineStore('user', {
         posts_balance: 0 as number | null,
     }),
     getters: {
-        getAccessToken: (state) => state.user?.access_token,
+        getAccessToken: (state) =>  state.user?.access_token,
         getCurrentSkin: (state) => state.skin,
         getCurrentBg: (state) => state.bg
     },
@@ -146,7 +146,7 @@ export const useUserStore = defineStore('user', {
             }
         },
         async getPosts(){
-            // if(!this.user) return;
+            if(!this.user) return;
             const response = await axios.get(`${import.meta.env.VITE_API_HOST}/getPosts`, {
                 headers: {
                     'x-api-key': this.getAccessToken,
@@ -154,6 +154,8 @@ export const useUserStore = defineStore('user', {
             });
             console.log(response);
             this.posts = response.data;
+            if(response.data.length > 0) return true;
+            return false;
             
         },
         async exchangeDonateMoney(amount: number) {
@@ -169,7 +171,6 @@ export const useUserStore = defineStore('user', {
                   }
                 }
             );
-            console.log(response);
             if(response.data.sucess) return true;
             return false;
         },
@@ -282,16 +283,6 @@ export const useUserStore = defineStore('user', {
                 this.user = response.data.user
                 return true;
             } 
-        },
-        async getMyPostsBalance() {
-            if(!this.user) return;
-            const response = await axios.get(`${import.meta.env.VITE_API_HOST}/getUserPostsBalance`, {
-                headers: {
-                    'x-api-key': this.user.access_token,
-                }
-            });
-            console.log(response);
-            this.posts_balance = response.data;
         },
         async buyNewSkin(skinId: number)
         {
@@ -458,7 +449,6 @@ export const useUserStore = defineStore('user', {
                 return true;
             }
             return false;
-            console.log(result);
         },
         recharge() {
             if (this.user) {

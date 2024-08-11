@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { useUserStore } from '@/store/user';
+import { allPosts, UserWithBoosts, useUserStore } from '@/store/user';
 import { onMounted, ref } from 'vue';
 import loadingIcon from "@/assets/images/loading.svg";
 import AcceptIcon from "@/assets/images/acceptet.svg";
@@ -10,6 +10,8 @@ import question from "@/assets/images/question.svg";
 import {useWebAppViewport, useWebApp, useWebAppBackButton, useWebAppTheme, useWebAppClosingConfirmation} from 'vue-tg'
 import moment from 'moment';
 import { useI18n } from 'vue-i18n';
+import { Interface } from 'readline';
+import axios from 'axios';
 const { t } = useI18n();
 const userStore = useUserStore()
 userStore.getBoosts()
@@ -49,14 +51,37 @@ const progressNewPosts = [
     }
 ]
 
-
 async function fetchUserData() {
     try {
         await Promise.all([
             userStore.getMyBoughtPosts(),
-            userStore.getPosts(),
+            userStore.getPosts().then(ok => {
+                if(ok) {
+                    if(userStore.posts == null) return;
+                    const donatePosts: allPosts[] = userStore.posts.filter(post => post.Type === 'donate');
+                    const votePosts: allPosts[] = userStore.posts.filter(post => post.Type === 'vote');
+
+                    const result: allPosts[] = [];
+                    while (donatePosts.length > 0 || votePosts.length > 0) {
+                        if (donatePosts.length > 0) {
+                            const post = donatePosts.shift();
+                            if (post !== undefined) {  // Проверяем, что post не undefined
+                                result.push(post);
+                            }
+                        }
+                        if (votePosts.length > 0) {
+                            const post = votePosts.shift();
+                            if (post !== undefined) {  // Проверяем, что post не undefined
+                                result.push(post);
+                            }
+                        }
+                    }
+                    userStore.posts = result;
+
+                }
+            }),
             userStore.getMyPosts(),
-            userStore.getMyPostsBalance()
+            // userStore.getMyPostsBalance()
         ]);
     } catch (error) {
         console.error('Error fetching user data:', error);
@@ -67,14 +92,6 @@ onMounted(() => {
     pageState.value = "posts";
     fetchUserData();
 });
-
-function closePopup() {
-  if (justOpened.value) {
-    justOpened.value = false;
-    return;
-  }
-  isPopupVisible.value = false;
-}
 
 const handleChangePageState = (state: string) => {
   if (state === pageState.value) return;
@@ -312,14 +329,15 @@ const exchangeValue = ref(0);
 
 const exchangeDonateMoney = () => {
     if(!userStore.user) return;
-    if(userStore.posts_balance != null && userStore.posts_balance < exchangeValue.value) {
+    if(userStore.user.posts_balance != null && userStore.user.posts_balance < exchangeValue.value) {
         useWebAppPopup().showAlert("ⓘ Недостаточно средств для вывода!");
     }
     useWebAppPopup().showAlert("ⓘ Система удерживает 30% комиссию при переводе средств с донатного счёта на основной! ⓘ");
     userStore.exchangeDonateMoney(exchangeValue.value).then(result => {
         if(result) {
-            if(userStore.posts_balance != null)
-            userStore.posts_balance -= exchangeValue.value
+            if(userStore.user?.posts_balance != null) {
+                userStore.user.posts_balance -= exchangeValue.value
+            }
         }
     });
 }
@@ -370,6 +388,9 @@ const handleEnter = (event: KeyboardEvent) => {
   (event.target as HTMLInputElement).blur();
 };
 
+const calculateUserBalance = (amount: number) => {
+    
+}
 </script>
 
 <template>
@@ -438,7 +459,7 @@ const handleEnter = (event: KeyboardEvent) => {
     </div>
 
     <div v-if="pageState === 'posts'" class="boosts">
-        <div v-for="post in userStore.posts" :key="post.ID" :style="{ width: '100%' }">
+        <div v-for="(post, index) in userStore.posts" :key="post.ID" :style="{ width: '100%' }">
                 <div class="post">
                     <div class="ownerData">
                         <img :src="post.AvatarURL"/>
@@ -456,7 +477,7 @@ const handleEnter = (event: KeyboardEvent) => {
                     </div>
                     <div v-if="post.Type != 'vote'" class="donations" :style="{ height: '70px', display:'flex', alignItems:'center', justifyContent: 'space-between', padding: '15px' }">
                         <span class="donation__counter">Donated: 🍆{{ post.Donated }}</span>
-                        <button v-if="post.OwnerID !== userStore.user?.id" class="boost-purchase-button" @click="setStatePopup('donate', post.ID, post.Price, null,null, null)">Donate</button>
+                        <button  class="boost-purchase-button" @click="setStatePopup('donate', post.ID, post.Price, null,null, null)">Donate</button>
                     </div>
                     <div v-else>
                         <div class="vote__counter">
@@ -510,7 +531,7 @@ const handleEnter = (event: KeyboardEvent) => {
             </div>
             <div v-if="popupState == 'change'">
                 <div class="slidecontainer" :style="{ marginTop: '30px'}">
-                    <input type="range" min="0" :max="userStore.posts_balance !== null ? userStore.posts_balance : 0" class="slider" id="myRange" v-model="exchangeValue">
+                    <input type="range" min="0" :max="userStore.user?.posts_balance !== null ? userStore.user?.posts_balance : 0" class="slider" id="myRange" v-model="exchangeValue">
                 </div>
                 <p>🍆{{ exchangeValue }}</p>
                 <button v-if="exchangeValue > 0" class="boost-purchase-button" :style="{ width:'100%'}" @click="exchangeDonateMoney">Exchange</button>
