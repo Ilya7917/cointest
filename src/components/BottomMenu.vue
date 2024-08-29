@@ -11,6 +11,20 @@
         </router-link>
     </div>
 
+    <div ref="clansRef" :style="{ right:'15px', position:'fixed', display:'flex', justifyContent:'space-between' }">
+        <router-link class="menu-item" :style="{ fontSize: '35px'}" to="/clans" tag="button">
+          🏰
+          <span>{{ $t("bottomMenu.clans") }}</span>
+        </router-link>
+    </div>
+
+    <div ref="gameRef" :style="{ left:'15px', position:'fixed', display:'flex', justifyContent:'space-between' }">
+        <router-link class="menu-item" :style="{ fontSize: '35px'}" to="/games" tag="button">
+          🎮
+          <span>{{ $t("bottomMenu.games") }}</span>
+        </router-link>
+    </div>
+
     <div ref="energyRef" class="energy">
       <div class="energy-progress-bar">
       <div class="energy-progress" :style="{ width: ((userStore.user?.energy ?? 0) / (1000 + (userStore.user?.max_energy_level ?? 0) * 500) * 100) + '%' }"></div>
@@ -66,12 +80,16 @@ const userStore = useUserStore()
 
 const energyRef = ref<HTMLElement | null>(null);
 const skinsRef = ref<HTMLElement | null>(null);
+const clansRef = ref<HTMLElement | null>(null);
+const gameRef = ref<HTMLElement | null>(null);
 const withdrawalBalanceRef = ref<HTMLElement | null>(null);
 
 const updatePosition = () => {
-  if (energyRef.value && skinsRef.value && withdrawalBalanceRef.value) {
+  if (energyRef.value && skinsRef.value && withdrawalBalanceRef.value && clansRef.value && gameRef.value) {
     const energyRect = energyRef.value.getBoundingClientRect();
     skinsRef.value.style.bottom = `${window.innerHeight - energyRect.top + 20}px`;
+    clansRef.value.style.bottom = `${window.innerHeight - energyRect.top + 95}px`;
+    gameRef.value.style.bottom = `${window.innerHeight - energyRect.top + 60}px`;
     withdrawalBalanceRef.value.style.bottom = `${window.innerHeight - energyRect.top + 20}px`;
   }
 };

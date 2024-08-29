@@ -6,7 +6,7 @@ const routes = [
         path: '/', name: 'miner', component: () => import('@/components/Miner.vue')
     },
     {
-        path: '/leaderboard', name: 'leaderboard', component: () => import('@/components/Leaderboard.vue')
+        path: '/leaderboard', name: 'leaderboard', component: () => import('@/components/leaderBoard/Leaderboard.vue')
     },
     {
         path: '/skins', name: 'skins', component: () => import('@/components/skins/SkinsStore.vue')
@@ -15,7 +15,7 @@ const routes = [
         path: '/boosts', name: 'boosts', component: () => import('@/components/boosts/BoostsIndex.vue')
     },
     {
-        path: '/channels', name: 'channels', component: () => import('@/components/Channels.vue')
+        path: '/channels', name: 'channels', component: () => import('@/components/channels/Channels.vue')
     },
     {
         path: '/slots', name: 'slots', component: () => import('@/components/slots/SlotMachine.vue')
@@ -28,6 +28,12 @@ const routes = [
     },
     {
         path: '/tasks', name:'tasks', component: () => useWebAppPopup().showAlert("In developing 🛠️")
+    },
+    {
+        path: '/clans', name: 'clans', component: () => import('@/components/clans/Clans.vue')
+    },
+    {
+        path: '/games', name: 'games', component: () => import('@/components/games/Games.vue')
     }
 ]
 

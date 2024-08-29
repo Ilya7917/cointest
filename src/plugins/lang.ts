@@ -25,7 +25,9 @@ const messages = {
       boosts: "Boosts",
       referrals: "Referrals",
       market: 'Market',
-      tasks: 'Tasks'
+      tasks: 'Tasks',
+      clans: 'Clans',
+      games: 'Games',
     },
     top: {
       day: "Day",
@@ -43,7 +45,10 @@ const messages = {
       selectedChannel: `Subscribe to the channel and get`,
       startRewardButton: "Start",
       waitRewardText: "Wait 1 hours for moderation check to claim the prize.",
+      waitOwnerCheckText: "Wait for the whale creator to check the role and release your coins",
       getRewardButton: "Claim",
+      toChannel: 'To Channel',
+      taskFinish: 'Task finished',
       notEnoughTime: "Give us 1 hour, the task is still being reviewed"
     },
     whales: {
@@ -112,7 +117,9 @@ const messages = {
       boosts: "Бустеры",
       referrals: "Рефералы",
       market: 'Маркет',
-      tasks: 'Задачи'
+      tasks: 'Задачи',
+      clans: 'Кланы',
+      games: 'Игры',
     },
     top: {
       day: "День",
@@ -130,7 +137,10 @@ const messages = {
       selectedChannel: `Подпишитесь на канал и получите`,
       startRewardButton: "Начать",
       waitRewardText: "Подождите 1 час, пока пройдет проверка модерации, чтобы получить приз.",
+      waitOwnerCheckText: "Подождите, пока создатель кита проверьте роль и отпустите ваши коины.",
       getRewardButton: "Получить",
+      toChannel: 'В канал',
+      taskFinish: 'Выполнил',
       notEnoughTime: "Дайте нам 1 час, задание ещё на проверке"
     },
     whales: {

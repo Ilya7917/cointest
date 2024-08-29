@@ -22,6 +22,8 @@ export interface User {
     premium_expires_at: Date | null;
     is_premium: boolean;
     daily_booster_available_at: Date;
+    clan: string;
+    clan_id: number;
 };
 
 export let dickIcon = 0;
@@ -71,6 +73,7 @@ export interface allPosts {
     IsPrivate: boolean;
     Description: string;
     Price: number;
+    CreatedAt: Date | null;
     Donated: number;
     Dumped: number;
     Type: string;
@@ -100,7 +103,7 @@ export const useUserStore = defineStore('user', {
         posts_balance: 0 as number | null,
     }),
     getters: {
-        getAccessToken: (state) =>  state.user?.access_token,
+        getAccessToken: (state) => state.user?.access_token,
         getCurrentSkin: (state) => state.skin,
         getCurrentBg: (state) => state.bg
     },

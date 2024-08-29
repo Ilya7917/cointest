@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { allPosts, UserWithBoosts, useUserStore } from '@/store/user';
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, Ref } from 'vue';
 import loadingIcon from "@/assets/images/loading.svg";
 import AcceptIcon from "@/assets/images/acceptet.svg";
 import DonateBalance from '../account/DonateBalance.vue';
@@ -13,16 +13,20 @@ userStore.getBoosts()
 const isPopupVisible = ref(false);
 const justOpened = ref(false);
 
+const host = import.meta.env.VITE_API_HOST;
+
 const pageState = ref("posts");
 
 const isPostOptionsSet = ref(false);
+
+const filteredPostBy = ref("");
 
 const isNextButton = ref(false);
 const newPosts = ref({
     image: null as File | null,
     isPrivate: false,
     description: '',
-    type: '',
+    type: 'vote',
     price: 0,
     votePrice: 0
 })
@@ -59,7 +63,7 @@ const filterPosts = (array: allPosts[]): allPosts[] => {
     return [...nonVotePosts, ...votePosts]
 }
 
-async function fetchUserData() {
+async function fetchPostData() {
     try {
         await Promise.all([
             userStore.getMyBoughtPosts(),
@@ -91,6 +95,49 @@ async function fetchUserData() {
                     }
                     userStore.posts = result;
 
+                }
+            }),
+            userStore.getMyPosts(),
+        ]);
+    } catch (error) {
+        console.error('Error fetching user data:', error);
+    }
+}
+
+async function fetchUserData() {
+    try {
+        await Promise.all([
+            userStore.getMyBoughtPosts(),
+            userStore.getPosts().then(ok => {
+                if(ok) {
+                    if(userStore.posts == null) return;
+                    
+                    let myFilteredPosts = filterPosts(userStore.posts);
+                    
+                    userStore.posts = myFilteredPosts;
+
+                    const donatePosts: allPosts[] = userStore.posts.filter(post => post.Type === 'donate');
+                    const votePosts: allPosts[] = userStore.posts.filter(post => post.Type === 'vote');
+
+                    const result: allPosts[] = [];
+                    while (donatePosts.length > 0 || votePosts.length > 0) {
+                        if (donatePosts.length > 0) {
+                            const post = donatePosts.shift();
+                            if (post !== undefined) { 
+                                result.push(post);
+                            }
+                        }
+                        if (votePosts.length > 0) {
+                            const post = votePosts.shift();
+                            if (post !== undefined) {  
+                                result.push(post);
+                            }
+                        }
+                    }
+                    userStore.posts = result;
+                    userStore.posts = userStore.posts.filter(post => post.CreatedAt !== null)
+                        .filter(post => post.CreatedAt && new Date(post.CreatedAt).toString() !== 'Invalid Date')
+                        .sort((a, b) => new Date(b.CreatedAt || new Date()).getTime() - new Date(a.CreatedAt || new Date()).getTime());
                 }
             }),
             userStore.getMyPosts(),
@@ -177,10 +224,24 @@ const nextButtonChangeState = () => {
 const uploadPostState = ref(false);
 const createNewPost = () => {
     if(!userStore.user) return;
+    
     if(userStore.user.balance < 1000) {
         useWebAppPopup().showAlert("Недостаточно 🍆 для создания поста");
         return;
     }
+    
+    if(newPosts.value.type != 'vote'){
+        if(newPosts.value.price <= 0 && newPosts.value.isPrivate) {
+            useWebAppPopup().showAlert("Стоимость открытия поста не может быть 0 🍆");
+            return;
+        }
+    } else {
+        if(newPosts.value.votePrice < 10) {
+            useWebAppPopup().showAlert("Стоимость голосования поста не может быть меньше 10 🍆");
+            return;
+        }
+    }
+
     newPosts.value.isPrivate = isPostOptionsSet.value;
     if (newPosts.value.image != null) {
         const newPost = {
@@ -418,11 +479,39 @@ const dumpedPost = (id: number) => {
     })
 }
 
+let userPosts: Ref<allPosts[] | undefined> = ref(undefined);
+let userPostsName = "";
+const showUserPosts = (userId: number) => {
+    if (userStore.posts && userStore.posts.length > 0) {
+        userPosts.value = userStore.posts.filter(x => x.OwnerID === userId);
+        if(userPosts.value != undefined && userPosts.value){
+            pageState.value = 'userposts';
+            userPostsName = userPosts.value[0].OwnerName
+        }
+    } else {
+        userPosts.value = [];
+    }
+}
+
+const onFilterPostsBy = (type: string) => {
+    if(userStore.posts == null) return;
+    switch(type){
+        case "coin":
+            fetchPostData();
+            break;
+        case "date":
+            userStore.posts = userStore.posts.filter(post => post.CreatedAt !== null)
+            .filter(post => post.CreatedAt && new Date(post.CreatedAt).toString() !== 'Invalid Date')
+            .sort((a, b) => new Date(b.CreatedAt || new Date()).getTime() - new Date(a.CreatedAt || new Date()).getTime());
+            break;
+    }
+} 
+
 </script>
 
 <template>
     <div class="Bg"></div>
-    <NavMenu :page-state="pageState" @change-page-state="handleChangePageState" />
+    <NavMenu :page-state="pageState" @change-page-state="handleChangePageState" :onFilterPostsBy="onFilterPostsBy" />
     <div v-if="pageState === 'create'" class="createPostMenu">
         <div>
             <ul id="progressbar">
@@ -437,7 +526,7 @@ const dumpedPost = (id: number) => {
                     <input class="dropdown" type="checkbox" id="dropdown" name="dropdown"/>
                     <label class="for-dropdown" for="dropdown">{{ newPosts.type == '' ? 'Выберите тип поста' : getPostTypeText(newPosts.type) }}</label>
                     <div class="section-dropdown"> 
-                        <a @click="setPostType('donate')">Донатный <i class="uil uil-arrow-right">💸</i></a>
+                        <!-- <a @click="setPostType('donate')">Донатный <i class="uil uil-arrow-right">💸</i></a> -->
                         <a @click="setPostType('vote')">Голосование  <i class="uil uil-arrow-right">🗳️</i></a>
                     </div>
                 </div>
@@ -489,11 +578,56 @@ const dumpedPost = (id: number) => {
         <div v-for="(post, index) in userStore.posts" :key="post.ID" :style="{ width: '100%' }">
                 <div class="post">
                     <div class="ownerData">
-                        <img :src="post.AvatarURL"/>
+                        <img :src="post.AvatarURL.includes('uploads') ?  `${host}/${post.AvatarURL}` : post.AvatarURL" @click="showUserPosts(post.OwnerID)"/>
+                        <span @click="showUserPosts(post.OwnerID)">{{ post.OwnerName }}</span>
+                    </div>
+                    <div class="postImage" :style="{  filter: checkIfItMyPost(post.OwnerID, post.ID) ? 'blur(25px)' : 'blur(0px)'}" >
+                        <img :src="post.ImagePath.includes('uploads') ? `${host}/${post.ImagePath}` : post.ImagePath" :style="{ maxWidth: '100%', height: 'auto', width:'100%'}" />
+                    </div>
+                    <div class="postDescription">
+                        <span>{{ post.Description }}</span>
+                    </div>
+                    <div v-if="checkIfCanUnlockPost(post.ID, post.OwnerID)" class="unlock" :style="{ height: '70px', display:'flex', alignItems:'center', justifyContent: 'space-between', padding: '15px' }">
+                        <span :style="{ fontSize: '14px' }">🍆{{ post.Price }}</span>
+                        <button class="boost-purchase-button" @click="setStatePopup('unlock', post.ID, post.Price, null, null, null)">Unlock</button>
+                    </div>
+                    <div v-if="post.Type != 'vote'" class="donations" :style="{ height: '70px', display:'flex', alignItems:'center', justifyContent: 'space-between', padding: '15px' }">
+                        <span class="donation__counter">Donated: 🍆{{ post.Donated - post.Dumped }}</span>
+                        <button  class="boost-purchase-button" @click="setStatePopup('donate', post.ID, post.Price, null,null, null)">Donate</button>
+                    </div>
+                    <div v-else>
+                        <div class="vote__counter">
+                            <span>Всего: {{  ( (post.VoteYes + post.VoteNo) * post.VotePrice ) - post.Dumped }}🍆</span>
+                        </div>
+                        <div class="vote__counter-actions">
+                            <div :style="{ display:'felx', flexDirection:'column', justifyContent:'center', textAlign:'center'}">
+                                <span :style="{ fontSize:'18px'}">{{ post.VoteYes }} ✅</span>
+                                <button class="boost-purchase-button" :style="{ marginLeft:'15px', marginTop:'10px', height:'40px', backgroundColor:'#3f8b1e', display:'flex', justifyContent:'center', alignItems:'center' }" @click="votePost(post.ID, 'yes', post.VotePrice)">Да {{ post.VotePrice }}🍆</button>
+                            </div>
+                            <div :style="{ display:'felx', flexDirection:'column', justifyContent:'center', textAlign:'center'}">
+                                <span :style="{ fontSize:'18px'}">{{ post.VoteNo }} ❌</span>
+                                <button class="boost-purchase-button" :style="{ marginRight:'15px',  marginTop:'10px', height:'40px', backgroundColor: '#bc0e0e', display:'flex', justifyContent:'center', alignItems:'center' }" @click="votePost(post.ID, 'no', post.VotePrice)">Нет {{ post.VotePrice }}🍆</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div :style="{ display:'flex', justifyContent:'flex-end', alignItems:'center', padding:'15px' }">
+                        <button class="boost-purchase-button" :style="{ padding:'15px', height:'40px', display:'flex', justifyContent:'center', alignItems:'center' }" @click="dumpedPost(post.ID)">😡 Dump 1.000 🍆</button>
+                    </div>
+                </div>
+        </div>
+    </div>
+
+
+    <div v-if="pageState === 'userposts'" class="boosts">
+        <span :style="{ fontSize:'20px', fontWeight:'bold', margin:'0 auto' }"> Посты пользователя: {{ userPostsName }} </span>
+        <div v-for="(post, index) in userPosts" :key="post.ID" :style="{ width: '100%' }">
+                <div class="post">
+                    <div class="ownerData">
+                        <img :src="post.AvatarURL.includes('uploads') ?  `${host}/${post.AvatarURL}` : post.AvatarURL" />
                         <span>{{ post.OwnerName }}</span>
                     </div>
                     <div class="postImage" :style="{  filter: checkIfItMyPost(post.OwnerID, post.ID) ? 'blur(25px)' : 'blur(0px)'}" >
-                        <img :src="post.ImagePath" :style="{ maxWidth: '100%', height: 'auto', width:'100%'}" />
+                        <img :src="post.ImagePath.includes('uploads') ? `${host}/${post.ImagePath}` : post.ImagePath" :style="{ maxWidth: '100%', height: 'auto', width:'100%'}" />
                     </div>
                     <div class="postDescription">
                         <span>{{ post.Description }}</span>
